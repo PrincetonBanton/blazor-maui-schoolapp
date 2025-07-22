@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.ResponseCompression;
 using SchoolApp.Server.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models; //Added for Swagger
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,12 +14,26 @@ builder.Services.AddRazorPages();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Swagger Services
+builder.Services.AddEndpointsApiExplorer(); 
+builder.Services.AddSwaggerGen(c =>         
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "SchoolApp API", Version = "v1" });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.cd s
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
+
+    // Swagger Middleware
+    app.UseSwagger();      
+    app.UseSwaggerUI(c => 
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "SchoolApp API v1");
+    });
 }
 else
 {
@@ -28,13 +43,9 @@ else
 }
 
 app.UseHttpsRedirection();
-
 app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
-
 app.UseRouting();
-
-
 app.MapRazorPages();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
