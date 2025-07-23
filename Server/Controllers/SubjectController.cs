@@ -66,4 +66,17 @@ public class SubjectController : ControllerBase
 
         return NoContent();
     }
+
+    // GET: api/subject/{subjectId}/components
+    [HttpGet("{subjectId}/components")]
+    public ActionResult<IEnumerable<Component>> GetComponentsBySubject(Guid subjectId)
+    {
+        var components = _context.Components
+            .Where(c => c.SubjectId == subjectId)
+            .ToList();
+
+        return Ok(components);
+    }
+
+
 }

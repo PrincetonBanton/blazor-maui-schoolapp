@@ -1,0 +1,268 @@
+﻿@page "/template"
+@inject HttpClient Http
+@inject IJSRuntime JS
+
+<!-- Subject UI -->
+<div class="mb-3">
+    <div class="d-flex align-items-center mb-2">
+        <input type="text" class="form-control me-2" placeholder="New Subject Name" style="width: 310px;" @bind="NewSubjectName" />
+        <button class="btn btn-primary" style="width: 200px;" @onclick="AddSubject">Add Subject</button>
+    </div>
+
+    @if (SelectedSubjectId != null)
+    {
+        <!-- Add Component Form -->
+        <div class="mb-3">
+            <div class="d-flex align-items-center mb-2">
+                <input type="text" class="form-control me-2" style="width: 200px;" placeholder="Component Name" @bind="NewComponentName" />
+                <input type="number" class="form-control me-2" style="width: 100px;" placeholder="% of Subject" @bind="NewComponentPercentage" />
+                <button class="btn btn-success" style="width: 200px;" @onclick="AddComponent">Add Component</button>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex align-items-center">
+        <select class="form-select me-2" style="width: 200px;" @onchange="OnSubjectChanged">
+            <option value="">-- Choose Subject --</option>
+            @foreach (var subject in Subjects)
+            {
+                <option value="@subject.Id">@subject.Name</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (Components.Any())
+{
+    <!-- Component Table -->
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th><button class="btn btn-success" style="width: 200px" @onclick ="OnAddComponentClicked">Component Add</button></th>
+                <th>% of Subject</th>
+                <th><button class="btn btn-success" style="width: 200px" @onclick="OnAddSubcomponentClicked">Subcomponent Add</button></th>
+                <th>% of Component</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            @foreach (var comp in Components)
+            {
+                var rowspan = comp.Subcomponents.Count == 0 ? 1 : comp.Subcomponents.Count;
+                <tr>
+                    <td rowspan="@rowspan">@comp.Name</td>
+                    <td rowspan="@rowspan">@comp.Percentage%</td>
+
+                    @if (comp.Subcomponents.Count > 0)
+                    {
+                        <td>@comp.Subcomponents[0].Name</td>
+                        <td>@comp.Subcomponents[0].Percentage%</td>
+                    }
+                    else
+                    {
+                        <td colspan="2" class="text-center text-muted">No subcomponents</td>
+                    }
+                </tr>
+
+                @for (int i = 1; i < comp.Subcomponents.Count; i++)
+                {
+                    <tr>
+                        <td>@comp.Subcomponents[i].Name</td>
+                        <td>@comp.Subcomponents[i].Percentage%</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+else if (SelectedSubjectId != null)
+{
+    <p class="text-muted">No components found for this subject.</p>
+}
+
+@using System.Text.Json
+@code {
+    private List<Subject> Subjects = new();
+    private string NewSubjectName = string.Empty;
+
+    private Guid? SelectedSubjectId;
+    private List<Component> Components = new();
+
+    private string NewComponentName = string.Empty;
+    private double NewComponentPercentage = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubjects();
+    }
+
+    private async Task LoadSubjects()
+    {
+        try
+        {
+            Subjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error loading subjects: {ex.Message}");
+        }
+    }
+
+    private async Task AddSubject()
+    {
+        if (string.IsNullOrWhiteSpace(NewSubjectName))
+            return;
+
+        var newSubject = new Subject { Name = NewSubjectName };
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/subject", newSubject);
+            if (response.IsSuccessStatusCode)
+            {
+                NewSubjectName = string.Empty;
+                await LoadSubjects();
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to add subject: {err}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"AddSubject error: {ex.Message}");
+        }
+    }
+
+    private async Task OnSubjectChanged(ChangeEventArgs e)
+    {
+        try
+        {
+            var value = e?.Value?.ToString();
+            if (Guid.TryParse(value, out var subjectId))
+            {
+                SelectedSubjectId = subjectId;
+                await LoadComponents();
+            }
+            else
+            {
+                SelectedSubjectId = null;
+                Components.Clear();
+                await JS.InvokeVoidAsync("alert", "Invalid subject selected.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error fetching components: {ex.Message}");
+        }
+    }
+
+private async Task LoadComponents()
+{
+    if (SelectedSubjectId == Guid.Empty)
+    {
+        await JS.InvokeVoidAsync("alert", "Please select a valid subject.");
+        return;
+    }
+
+    try
+    {
+        var response = await Http.GetAsync($"api/Subject/{SelectedSubjectId}/Components");
+
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await JS.InvokeVoidAsync("alert", $"Failed to load components:\n{content}");
+            return;
+        }
+
+        // Optional: Log or alert raw content
+        Console.WriteLine($"Response JSON: {content}");
+
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        Components = JsonSerializer.Deserialize<List<Component>>(content, options) ?? new List<Component>();
+    }
+    catch (Exception ex)
+    {
+        await JS.InvokeVoidAsync("alert", $"Error loading components: {ex.Message}");
+    }
+}
+
+
+
+    private async Task AddComponent()
+    {
+        if (SelectedSubjectId == null || string.IsNullOrWhiteSpace(NewComponentName) || NewComponentPercentage <= 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Please provide valid component name and percentage.");
+            return;
+        }
+
+        var newComponent = new Component
+        {
+            Name = NewComponentName,
+            Percentage = NewComponentPercentage,
+            SubjectId = SelectedSubjectId.Value //Ensure SubjectId is included
+        };
+
+        //Show serialized object before sending
+        var json = JsonSerializer.Serialize(newComponent, new JsonSerializerOptions { WriteIndented = true });
+        await JS.InvokeVoidAsync("alert", $"Component to post:\n{json}");
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/component", newComponent);
+            if (response.IsSuccessStatusCode)
+            {
+                NewComponentName = string.Empty;
+                NewComponentPercentage = 0;
+                await LoadComponents();
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to add component: {err}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"AddComponent error: {ex.Message}");
+        }
+    }
+
+    private async Task OnAddComponentClicked()
+    {
+        await JS.InvokeVoidAsync("alert", "Add Component Clicked");
+    }
+
+    private async Task OnAddSubcomponentClicked()
+    {
+        await JS.InvokeVoidAsync("alert", "Add Subcomponent Clicked");
+    }
+
+
+    // Local DTOs
+    public class Subject
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public class Component
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public double Percentage { get; set; }
+        public Guid SubjectId { get; set; } 
+        public List<Subcomponent> Subcomponents { get; set; } = new();
+    }
+
+    public class Subcomponent
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public double Percentage { get; set; }
+    }
+}
