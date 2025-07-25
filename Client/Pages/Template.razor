@@ -199,6 +199,8 @@ else
 
 @using System.Text.Json
 @using SchoolApp.Shared.Models
+@using SchoolApp.Client.Helpers
+
 @code {
     private Guid? SelectedSubjectId;
     private Guid? SelectedComponentIdForSub = null;
@@ -360,39 +362,12 @@ else
 
     private async Task ValidateComponentAndSubcomponentPercentages()
     {
-        double componentTotal = Components.Sum(c => c.Percentage);
-        IsTemplateStructureValid = false;
-        // Step 1: Check total component %
-        if (Math.Abs(componentTotal - 100) > 0.01)
-        {
-            ValidationMessage = $"Not Validated: Total component percentage is {componentTotal:F2}%. It must be exactly 100%.";
-            ValidationMessageClass = "text-danger";
-            return;
-        }
+        var result = TemplateValidator.Validate(Components);
 
-        // Step 2: Check each component's subcomponents
-        foreach (var comp in Components)
-        {
-            if (comp.Subcomponents == null || comp.Subcomponents.Count == 0)
-            {
-                ValidationMessage = $"Not Validated: \"{comp.Name}\" has no subcomponents.";
-                ValidationMessageClass = "text-danger";
-                return;
-            }
-
-            double subTotal = comp.Subcomponents.Sum(s => s.Percentage);
-            if (Math.Abs(subTotal - 100) > 0.01)
-            {
-                ValidationMessage = $"Not Validated: Subcomponents in \"{comp.Name}\" add up to {subTotal:F2}%. They must total 100%.";
-                ValidationMessageClass = "text-danger";
-                return;
-            }
-        }
-
-        // Step 3: Passed
-        IsTemplateStructureValid = true;
+        IsTemplateStructureValid = result.IsValid;
+        ValidationMessage = result.Message;
+        ValidationMessageClass = result.CssClass;
     }
-
 
     private async Task OnAddComponentClicked()
     {
