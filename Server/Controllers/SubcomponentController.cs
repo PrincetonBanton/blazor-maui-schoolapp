@@ -17,7 +17,7 @@ public class SubcomponentController : ControllerBase
 
     // GET: api/Subcomponent
     [HttpGet]
-    public ActionResult<IEnumerable<Subcomponent>> GetSubcomponents()
+    public ActionResult<IEnumerable<Subcomponent>> GetAll()
     {
         return Ok(_context.Subcomponents.ToList());
     }
@@ -34,7 +34,7 @@ public class SubcomponentController : ControllerBase
 
     // GET: api/Subcomponent/{id}
     [HttpGet("{id}")]
-    public ActionResult<Subcomponent> GetSubcomponent(Guid id)
+    public ActionResult<Subcomponent> GetById(Guid id)
     {
         var sub = _context.Subcomponents.FirstOrDefault(s => s.Id == id);
         if (sub == null) return NotFound();
@@ -43,7 +43,7 @@ public class SubcomponentController : ControllerBase
 
     // POST: api/Subcomponent
     [HttpPost]
-    public ActionResult<Subcomponent> CreateSubcomponent(Subcomponent sub)
+    public ActionResult<Subcomponent> Create(Subcomponent sub)
     {
         sub.Id = Guid.NewGuid();
         _context.Subcomponents.Add(sub);
@@ -53,7 +53,7 @@ public class SubcomponentController : ControllerBase
 
     // PUT: api/Subcomponent/{id}
     [HttpPut("{id}")]
-    public IActionResult UpdateSubcomponent(Guid id, Subcomponent updated)
+    public IActionResult Update(Guid id, Subcomponent updated)
     {
         var sub = _context.Subcomponents.FirstOrDefault(s => s.Id == id);
         if (sub == null) return NotFound();
@@ -70,7 +70,7 @@ public class SubcomponentController : ControllerBase
 
     // DELETE: api/Subcomponent/{id}
     [HttpDelete("{id}")]
-    public IActionResult DeleteSubcomponent(Guid id)
+    public IActionResult Delete(Guid id)
     {
         var sub = _context.Subcomponents.FirstOrDefault(s => s.Id == id);
         if (sub == null) return NotFound();

@@ -9,4 +9,6 @@ public class Subject
 
     // Navigation
     public List<Component> Components { get; set; } = new();
+
+    public bool IsValidated { get; set; } = false;
 }

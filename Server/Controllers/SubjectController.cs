@@ -78,5 +78,4 @@ public class SubjectController : ControllerBase
         return Ok(components);
     }
 
-
 }

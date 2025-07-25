@@ -5,24 +5,63 @@
 <!-- Subject UI -->
 <div class="mb-3">
     <div class="d-flex align-items-center mb-2">
-        <input type="text" class="form-control me-2" placeholder="New Subject Name" style="width: 310px;" @bind="NewSubjectName" />
+        <input type="text" class="form-control me-2" placeholder="New Subject Name" style="width: 300px;" @bind="NewSubjectName" />
         <button class="btn btn-primary" style="width: 200px;" @onclick="AddSubject">Add Subject</button>
     </div>
 
     @if (SelectedSubjectId != null)
     {
-        <!-- Add Component Form -->
-        <div class="mb-3">
-            <div class="d-flex align-items-center mb-2">
-                <input type="text" class="form-control me-2" style="width: 200px;" placeholder="Component Name" @bind="NewComponentName" />
-                <input type="number" class="form-control me-2" style="width: 100px;" placeholder="% of Subject" @bind="NewComponentPercentage" />
-                <button class="btn btn-success" style="width: 200px;" @onclick="AddComponent">Add Component</button>
+        @if (ShowAddComponentModal)
+        {
+            <div class="modal-backdrop fade show" style="z-index: 1040;"></div>
+
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Add Component</h5>
+                            <button type="button" class="btn-close" aria-label="Close" @onclick="() => ShowAddComponentModal = false"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="text" class="form-control mb-2" placeholder="Component Name" @bind="NewComponentName" />
+                            <input type="number" class="form-control mb-2" placeholder="% of Subject" @bind="NewComponentPercentage" />
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" style="width: 150px" @onclick="() => ShowAddComponentModal = false">Cancel</button>
+                            <button class="btn btn-success" style="width: 150px" @onclick="OnAddComponentClicked">Save</button>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        }
+        @if (ShowAddSubcomponentModal)
+        {
+            <div class="modal-backdrop fade show" style="z-index: 1040;"></div>
+
+            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <p><strong>Adding to:</strong> @Components.FirstOrDefault(c => c.Id == SelectedComponentIdForSub)?.Name</p>
+                            <button type="button" class="btn-close" aria-label="Close" @onclick="() => ShowAddSubcomponentModal = false"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="text" class="form-control mb-2" placeholder="Subcomponent Name" @bind="NewSubcomponentName" />
+                            <input type="number" class="form-control mb-2" placeholder="% of Component" @bind="NewSubcomponentPercentage" />
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" style="width: 150px" @onclick="() => ShowAddSubcomponentModal = false">Cancel</button>
+                            <button class="btn btn-success" style="width: 150px" @onclick="OnConfirmAddSubcomponent">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
     }
 
     <div class="d-flex align-items-center">
-        <select class="form-select me-2" style="width: 200px;" @onchange="OnSubjectChanged">
+        <select class="form-select me-2" style="width: 300px;" @onchange="OnSubjectChanged">
             <option value="">-- Choose Subject --</option>
             @foreach (var subject in Subjects)
             {
@@ -38,32 +77,60 @@
     <table class="table table-bordered">
         <thead>
             <tr>
-                <th><button class="btn btn-success" style="width: 200px" @onclick ="OnAddComponentClicked">Component Add</button></th>
+                @if (Math.Round(Components.Sum(c => c.Percentage)) < 100)
+                {
+                    <th>
+                        <button class="btn btn-success" style="width: 200px" @onclick="() => ShowAddComponentModal = true">Component +</button>
+                    </th>
+                }
+                else
+                {
+                    <th>Component</th>
+                }
                 <th>% of Subject</th>
-                <th><button class="btn btn-success" style="width: 200px" @onclick="OnAddSubcomponentClicked">Subcomponent Add</button></th>
+                <th>Subcomponent</th>
                 <th>% of Component</th>
+                <th style="width: 120px;">Actions</th>
             </tr>
         </thead>
-
         <tbody>
+            <!-- Loop through each Component -->
             @foreach (var comp in Components)
             {
+                // Calculate rowspan: if no subcomponents, rowspan = 1; otherwise, rowspan = number of subcomponents
                 var rowspan = comp.Subcomponents.Count == 0 ? 1 : comp.Subcomponents.Count;
-                <tr>
-                    <td rowspan="@rowspan">@comp.Name</td>
-                    <td rowspan="@rowspan">@comp.Percentage%</td>
+                var subTotal = comp.Subcomponents.Sum(s => s.Percentage);
+                bool subInvalid = Math.Round(subTotal) != 100;
+                bool compInvalid = Math.Round(Components.Sum(c => c.Percentage)) != 100;
 
+                <tr>
+                    <td rowspan="@rowspan" class="fw-bold" style="color:@(subInvalid ? "red" : "black")">@comp.Name</td>
+                    <td rowspan="@rowspan" style="color:@(compInvalid ? "red" : "black")">@comp.Percentage%</td>
+
+                    <!-- Handle display of the FIRST subcomponent (or a placeholder if none) -->
                     @if (comp.Subcomponents.Count > 0)
                     {
+                        <!-- First Subcomponent Name and Percentage -->
                         <td>@comp.Subcomponents[0].Name</td>
                         <td>@comp.Subcomponents[0].Percentage%</td>
+                        @if (Math.Round(comp.Subcomponents.Sum(s => s.Percentage)) < 100)
+                        {
+                            <td rowspan="@rowspan">
+                                <button class="btn btn-success" @onclick="() => OpenSubcomponentModal(comp.Id)">Sub +</button>
+                            </td>
+                        }
                     }
                     else
                     {
+                        <!-- No subcomponents row -->
                         <td colspan="2" class="text-center text-muted">No subcomponents</td>
+                        <td rowspan="@rowspan">
+                            <button class="btn btn-success" @onclick="() => OpenSubcomponentModal(comp.Id)">Sub +</button>
+                        </td>   
                     }
                 </tr>
 
+                <!-- Loop through the REMAINING subcomponents (index 1 and onward) -->
                 @for (int i = 1; i < comp.Subcomponents.Count; i++)
                 {
                     <tr>
@@ -74,22 +141,92 @@
             }
         </tbody>
     </table>
+
+    <table class="table table-bordered w-auto">
+        <thead class="table-light">
+            <tr>
+                <th>Component</th>
+                <th>Component %</th>
+                <th>Subcomponent %</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var comp in Components)
+            {
+                double subTotal = comp.Subcomponents?.Sum(s => s.Percentage) ?? 0;
+                bool isComponentValid = Math.Round(subTotal) == 100;
+                bool isSubcomponentValid = Math.Round(subTotal) == 100;
+
+                <tr>
+                    <td>@comp.Name</td>
+                    <td style="color:@(isComponentValid ? "black" : "red")">@comp.Percentage%</td>
+                    <td style="color:@(isSubcomponentValid ? "black" : "red")">@subTotal%</td>
+                    <td>
+                        @if (isComponentValid && isSubcomponentValid)
+                        {
+                            <span class="text-success fw-bold">Valid</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger fw-bold">Invalid</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
 }
 else if (SelectedSubjectId != null)
 {
-    <p class="text-muted">No components found for this subject.</p>
+    <div class="text-muted">
+        <p>No components found for this subject.</p>
+        <button class="btn btn-success" @onclick="() => ShowAddComponentModal = true">Add First Component</button>
+    </div>
 }
 
+@if (IsTemplateStructureValid)
+{
+    <button class="btn btn-primary mt-3" @onclick="OnFinalValidateClicked">Final Validate Template</button>
+}
+else
+{
+    <div class="@ValidationMessageClass" style="margin-top: 1rem; font-weight: bold;">@ValidationMessage</div>
+}
+
+
+
 @using System.Text.Json
+@using SchoolApp.Shared.Models
 @code {
+    private Guid? SelectedSubjectId;
+    private Guid? SelectedComponentIdForSub = null;
     private List<Subject> Subjects = new();
+    private List<Component> Components = new();
     private string NewSubjectName = string.Empty;
 
-    private Guid? SelectedSubjectId;
-    private List<Component> Components = new();
-
+    private bool ShowAddComponentModal = false;
     private string NewComponentName = string.Empty;
     private double NewComponentPercentage = 0;
+
+    private bool ShowAddSubcomponentModal = false;
+    private string NewSubcomponentName = string.Empty;
+    private double NewSubcomponentPercentage = 0;
+
+    private void OpenSubcomponentModal(Guid componentId)
+    {
+        SelectedComponentIdForSub = componentId;
+        NewSubcomponentName = string.Empty;
+        NewSubcomponentPercentage = 0;
+        ShowAddSubcomponentModal = true;
+    }
+
+    private string ValidationMessage { get; set; }
+    private string ValidationMessageClass { get; set; }
+    private bool IsTemplateStructureValid = false;
+
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -111,10 +248,22 @@ else if (SelectedSubjectId != null)
     private async Task AddSubject()
     {
         if (string.IsNullOrWhiteSpace(NewSubjectName))
+        {
+            await JS.InvokeVoidAsync("alert", "Subject name cannot be empty.");
             return;
+        }
 
+        // Check if subject already exists (case-insensitive)
+        if (Subjects.Any(s => s.Name.Trim().ToLower() == NewSubjectName.Trim().ToLower()))
+        {
+            await JS.InvokeVoidAsync("alert", "Subject already exists.");
+            return;
+        }
+
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to add the subject: {NewSubjectName}?");
+        if (!confirmed) return;
+        
         var newSubject = new Subject { Name = NewSubjectName };
-
         try
         {
             var response = await Http.PostAsJsonAsync("api/subject", newSubject);
@@ -134,6 +283,7 @@ else if (SelectedSubjectId != null)
             await JS.InvokeVoidAsync("alert", $"AddSubject error: {ex.Message}");
         }
     }
+
 
     private async Task OnSubjectChanged(ChangeEventArgs e)
     {
@@ -158,41 +308,93 @@ else if (SelectedSubjectId != null)
         }
     }
 
-private async Task LoadComponents()
-{
-    if (SelectedSubjectId == Guid.Empty)
+    private async Task LoadComponents()
     {
-        await JS.InvokeVoidAsync("alert", "Please select a valid subject.");
-        return;
-    }
-
-    try
-    {
-        var response = await Http.GetAsync($"api/Subject/{SelectedSubjectId}/Components");
-
-        var content = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
+        if (SelectedSubjectId == Guid.Empty)
         {
-            await JS.InvokeVoidAsync("alert", $"Failed to load components:\n{content}");
+            await JS.InvokeVoidAsync("alert", "Please select a valid subject.");
             return;
         }
 
-        // Optional: Log or alert raw content
-        Console.WriteLine($"Response JSON: {content}");
+        try
+        {
+            var response = await Http.GetAsync($"api/Subject/{SelectedSubjectId}/Components");
+            var content = await response.Content.ReadAsStringAsync();
 
-        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        Components = JsonSerializer.Deserialize<List<Component>>(content, options) ?? new List<Component>();
+            if (!response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", $"Failed to load components:\n{content}");
+                return;
+            }
+
+            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            Components = JsonSerializer.Deserialize<List<Component>>(content, options) ?? new List<Component>();
+
+            foreach (var comp in Components)
+            {
+                var subRes = await Http.GetAsync($"api/Subcomponent/by-component/{comp.Id}");
+                var subContent = await subRes.Content.ReadAsStringAsync();
+
+                if (subRes.IsSuccessStatusCode)
+                {
+                    comp.Subcomponents = JsonSerializer.Deserialize<List<Subcomponent>>(subContent, options) ?? new List<Subcomponent>();
+                }
+                else
+                {
+                    comp.Subcomponents = new List<Subcomponent>();
+                    await JS.InvokeVoidAsync("console.warn", $"Failed to load subcomponents for component {comp.Name}");
+                }
+            }
+
+            // Trigger validation after data has loaded and rendered
+            StateHasChanged(); // Let the UI update first
+            await Task.Delay(100);
+            await ValidateComponentAndSubcomponentPercentages();
+
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error loading components: {ex.Message}");
+        }
     }
-    catch (Exception ex)
+
+    private async Task ValidateComponentAndSubcomponentPercentages()
     {
-        await JS.InvokeVoidAsync("alert", $"Error loading components: {ex.Message}");
+        double componentTotal = Components.Sum(c => c.Percentage);
+        IsTemplateStructureValid = false;
+        // Step 1: Check total component %
+        if (Math.Abs(componentTotal - 100) > 0.01)
+        {
+            ValidationMessage = $"Not Validated: Total component percentage is {componentTotal:F2}%. It must be exactly 100%.";
+            ValidationMessageClass = "text-danger";
+            return;
+        }
+
+        // Step 2: Check each component's subcomponents
+        foreach (var comp in Components)
+        {
+            if (comp.Subcomponents == null || comp.Subcomponents.Count == 0)
+            {
+                ValidationMessage = $"Not Validated: \"{comp.Name}\" has no subcomponents.";
+                ValidationMessageClass = "text-danger";
+                return;
+            }
+
+            double subTotal = comp.Subcomponents.Sum(s => s.Percentage);
+            if (Math.Abs(subTotal - 100) > 0.01)
+            {
+                ValidationMessage = $"Not Validated: Subcomponents in \"{comp.Name}\" add up to {subTotal:F2}%. They must total 100%.";
+                ValidationMessageClass = "text-danger";
+                return;
+            }
+        }
+
+        // Step 3: Passed
+        IsTemplateStructureValid = true;
     }
-}
 
 
-
-    private async Task AddComponent()
+    private async Task OnAddComponentClicked()
     {
         if (SelectedSubjectId == null || string.IsNullOrWhiteSpace(NewComponentName) || NewComponentPercentage <= 0)
         {
@@ -204,10 +406,10 @@ private async Task LoadComponents()
         {
             Name = NewComponentName,
             Percentage = NewComponentPercentage,
-            SubjectId = SelectedSubjectId.Value //Ensure SubjectId is included
+            SubjectId = SelectedSubjectId.Value
         };
 
-        //Show serialized object before sending
+        // Show serialized object before sending
         var json = JsonSerializer.Serialize(newComponent, new JsonSerializerOptions { WriteIndented = true });
         await JS.InvokeVoidAsync("alert", $"Component to post:\n{json}");
 
@@ -232,37 +434,50 @@ private async Task LoadComponents()
         }
     }
 
-    private async Task OnAddComponentClicked()
+
+    private async Task OnConfirmAddSubcomponent()
     {
-        await JS.InvokeVoidAsync("alert", "Add Component Clicked");
+        if (SelectedComponentIdForSub == null || string.IsNullOrWhiteSpace(NewSubcomponentName) || NewSubcomponentPercentage <= 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Please provide valid subcomponent name and percentage.");
+            return;
+        }
+
+        var newSubcomponent = new Subcomponent
+        {
+            Name = NewSubcomponentName,
+            Percentage = NewSubcomponentPercentage,
+            ComponentId = SelectedComponentIdForSub.Value
+        };
+
+        var json = JsonSerializer.Serialize(newSubcomponent, new JsonSerializerOptions { WriteIndented = true });
+        await JS.InvokeVoidAsync("alert", $"Subcomponent to post:\n{json}");
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/subcomponent", newSubcomponent);
+            if (response.IsSuccessStatusCode)
+            {
+                NewSubcomponentName = string.Empty;
+                NewSubcomponentPercentage = 0;
+                ShowAddSubcomponentModal = false;
+
+                await LoadComponents(); // Reload components with subcomponents
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to add subcomponent: {err}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"AddSubcomponent error: {ex.Message}");
+        }
+    }
+    private async Task OnFinalValidateClicked()
+    {
+        await JS.InvokeVoidAsync("alert", "Final Validate button clicked!");
     }
 
-    private async Task OnAddSubcomponentClicked()
-    {
-        await JS.InvokeVoidAsync("alert", "Add Subcomponent Clicked");
-    }
-
-
-    // Local DTOs
-    public class Subject
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class Component
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public double Percentage { get; set; }
-        public Guid SubjectId { get; set; } 
-        public List<Subcomponent> Subcomponents { get; set; } = new();
-    }
-
-    public class Subcomponent
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public double Percentage { get; set; }
-    }
 }
