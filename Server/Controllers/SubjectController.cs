@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using SchoolApp.Shared.Models;
+using Microsoft.EntityFrameworkCore;
 using SchoolApp.Server.Data;
+using SchoolApp.Shared.Models;
 
 namespace SchoolApp.Server.Controllers;
 
@@ -22,14 +23,23 @@ public class SubjectController : ControllerBase
         return Ok(_context.Subjects.ToList());
     }
 
-    // GET: api/Subject/{id}
+
     [HttpGet("{id}")]
-    public ActionResult<Subject> GetSubject(Guid id)
+    public async Task<ActionResult<Subject>> GetSubject(Guid id)
     {
-        var subject = _context.Subjects.FirstOrDefault(s => s.Id == id);
-        if (subject == null) return NotFound();
-        return Ok(subject);
+        var subject = await _context.Subjects
+            .Include(s => s.Components)
+                .ThenInclude(c => c.Subcomponents)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+        if (subject == null)
+        {
+            return NotFound();
+        }
+
+        return subject;
     }
+
 
     // POST: api/Subject
     [HttpPost]
@@ -77,5 +87,20 @@ public class SubjectController : ControllerBase
 
         return Ok(components);
     }
+
+    // PUT: api/subject/validate/{id}
+    [HttpPut("validate/{id}")]
+    public IActionResult ValidateTemplate(Guid id)
+    {
+        var subject = _context.Subjects.FirstOrDefault(s => s.Id == id);
+        if (subject == null)
+            return NotFound();
+
+        subject.IsValidated = true;
+        _context.SaveChanges();
+
+        return NoContent();
+    }
+
 
 }
