@@ -2,8 +2,7 @@
 @page "/template/{SubjectId:guid}"
 
 @inject HttpClient Http
-
-<h3>Template</h3>
+@using SchoolApp.Shared.Models
 
 @if (Subject == null)
 {
@@ -22,6 +21,14 @@ else
                     <th>% of Subject</th>
                     <th>Subcomponent</th>
                     <th>% of Component</th>
+                    <th colspan="4" class="text-center">Items per Grading</th>
+                </tr>
+                <tr>
+                    <th colspan="4"></th>
+                    <th class="text-center">1st</th>
+                    <th class="text-center">2nd</th>
+                    <th class="text-center">3rd</th>
+                    <th class="text-center">4th</th>
                 </tr>
             </thead>
             <tbody>
@@ -46,10 +53,24 @@ else
                             {
                                 <td>@sub.Name</td>
                                 <td>@sub.Percentage %</td>
+
+                                @for (int grading = 1; grading <= 4; grading++)
+                                {
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <input class="form-control form-control-sm me-1" type="number" min="0" style="width: 60px;"
+                                                   @onchange="e => SaveItemCount(sub.Id, grading, e.Value?.ToString())" />
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => LoadResults(sub.Id, grading))">
+                                                Load
+                                            </button>
+                                        </div>
+
+                                    </td>
+                                }
                             }
                             else
                             {
-                                <td colspan="2"><em>No subcomponents</em></td>
+                                <td colspan="6"><em>No subcomponents</em></td>
                             }
                         </tr>
                     }
@@ -62,8 +83,6 @@ else
         <p><em>No components found for this subject.</em></p>
     }
 }
-
-@using SchoolApp.Shared.Models
 
 @code {
     [Parameter]
@@ -84,5 +103,20 @@ else
                 Console.WriteLine($"Failed to load subject: {ex.Message}");
             }
         }
+    }
+
+    private void SaveItemCount(Guid subcomponentId, int grading, string? inputValue)
+    {
+        if (int.TryParse(inputValue, out int itemCount))
+        {
+            Console.WriteLine($"Saved item count {itemCount} for Subcomponent {subcomponentId} - Grading {grading}");
+            // TODO: Save to backend (SubcomponentGrading table)
+        }
+    }
+
+    private void LoadResults(Guid subcomponentId, int grading)
+    {
+        Console.WriteLine($"Load Results for Subcomponent: {subcomponentId}, Grading: {grading}");
+        // TODO: Navigate to student list with subjectId + subcomponentId + grading
     }
 }
