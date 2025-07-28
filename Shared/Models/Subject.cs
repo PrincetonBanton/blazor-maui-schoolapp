@@ -1,6 +1,4 @@
-﻿using System.ComponentModel;
-
-namespace SchoolApp.Shared.Models;
+﻿namespace SchoolApp.Shared.Models;
 
 public class Subject
 {

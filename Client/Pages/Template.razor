@@ -2,6 +2,8 @@
 @page "/template/{SubjectId:guid}"
 
 @inject HttpClient Http
+@inject IJSRuntime JS
+
 @using SchoolApp.Shared.Models
 
 @if (Subject == null)
@@ -54,19 +56,22 @@ else
                                 <td>@sub.Name</td>
                                 <td>@sub.Percentage %</td>
 
-                                @for (int grading = 1; grading <= 4; grading++)
+                                @for (var grading = 1; grading <= 4; grading++)
                                 {
+                                    var currentGrading = grading; 
+
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <input class="form-control form-control-sm me-1" type="number" min="0" style="width: 60px;"
-                                                   @onchange="e => SaveItemCount(sub.Id, grading, e.Value?.ToString())" />
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => LoadResults(sub.Id, grading))">
+                                                   @onchange="e => SaveItemCount(sub.Id, currentGrading, e.Value?.ToString())" />
+
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => LoadResults(sub.Id, currentGrading))">
                                                 Load
                                             </button>
                                         </div>
-
                                     </td>
                                 }
+
                             }
                             else
                             {
@@ -105,14 +110,44 @@ else
         }
     }
 
-    private void SaveItemCount(Guid subcomponentId, int grading, string? inputValue)
+    private async void SaveItemCount(Guid subcomponentId, int grading, string? inputValue)
     {
         if (int.TryParse(inputValue, out int itemCount))
         {
-            Console.WriteLine($"Saved item count {itemCount} for Subcomponent {subcomponentId} - Grading {grading}");
-            // TODO: Save to backend (SubcomponentGrading table)
+            var item = new SubjectGradingItem
+            {
+                SubjectId = SubjectId,
+                SubcomponentId = subcomponentId,
+                GradingPeriod = grading,
+                ItemCount = itemCount,
+                CreatedAt = DateTime.Now
+            };
+
+            try
+            {
+                var response = await Http.PostAsJsonAsync("api/SubjectGradingItem", item);
+                if (response.IsSuccessStatusCode)
+                {
+                    await JS.InvokeVoidAsync("alert", $"Saved!\nGrading: {grading}\nItem Count: {itemCount}");
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    await JS.InvokeVoidAsync("alert", $"Failed to save: {error}");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+            }
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Invalid number");
         }
     }
+
+
 
     private void LoadResults(Guid subcomponentId, int grading)
     {

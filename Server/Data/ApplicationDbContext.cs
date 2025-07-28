@@ -16,6 +16,10 @@ namespace SchoolApp.Server.Data
         public DbSet<Subject> Subjects { get; set; }
         public DbSet<Component> Components { get; set; }
         public DbSet<Subcomponent> Subcomponents { get; set; }
-        public DbSet<GradeEntry> GradeEntries { get; set; }
+        public DbSet<SubjectGradingItem> SubjectGradingItems { get; set; }
+
+
+
+
     }
 }

@@ -12,18 +12,20 @@ namespace SchoolApp.Server.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "GradeEntries",
+                name: "SubjectGradingItems",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    StudentId = table.Column<Guid>(type: "TEXT", nullable: false),
+                    SubjectId = table.Column<Guid>(type: "TEXT", nullable: false),
                     SubcomponentId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Items = table.Column<int>(type: "INTEGER", nullable: false),
-                    Score = table.Column<int>(type: "INTEGER", nullable: false)
+                    GradingPeriod = table.Column<int>(type: "INTEGER", nullable: false),
+                    ItemCount = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    dummy = table.Column<string>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_GradeEntries", x => x.Id);
+                    table.PrimaryKey("PK_SubjectGradingItems", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -31,7 +33,8 @@ namespace SchoolApp.Server.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false)
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    IsValidated = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -95,10 +98,10 @@ namespace SchoolApp.Server.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "GradeEntries");
+                name: "Subcomponents");
 
             migrationBuilder.DropTable(
-                name: "Subcomponents");
+                name: "SubjectGradingItems");
 
             migrationBuilder.DropTable(
                 name: "Components");

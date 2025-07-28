@@ -11,8 +11,8 @@ using SchoolApp.Server.Data;
 namespace SchoolApp.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250722032935_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250728032616_AddSubjectGradingItems")]
+    partial class AddSubjectGradingItems
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -41,29 +41,6 @@ namespace SchoolApp.Server.Migrations
                     b.HasIndex("SubjectId");
 
                     b.ToTable("Components");
-                });
-
-            modelBuilder.Entity("SchoolApp.Shared.Models.GradeEntry", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Items")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Score")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<Guid>("StudentId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("SubcomponentId")
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GradeEntries");
                 });
 
             modelBuilder.Entity("SchoolApp.Shared.Models.Subcomponent", b =>
@@ -101,6 +78,9 @@ namespace SchoolApp.Server.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsValidated")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -108,6 +88,32 @@ namespace SchoolApp.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Subjects");
+                });
+
+            modelBuilder.Entity("SchoolApp.Shared.Models.SubjectGradingItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GradingPeriod")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ItemCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SubcomponentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SubjectId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SubjectGradingItems");
                 });
 
             modelBuilder.Entity("SchoolApp.Shared.Models.Component", b =>

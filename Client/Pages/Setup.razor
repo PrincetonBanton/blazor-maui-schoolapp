@@ -80,7 +80,7 @@
                 @if (Math.Round(Components.Sum(c => c.Percentage)) < 100)
                 {
                     <th>
-                        <button class="btn btn-success" style="width: 200px" @onclick="() => ShowAddComponentModal = true">Component +</button>
+                        <button class="btn btn-warning btn-sm" style="width: 200px" @onclick="() => ShowAddComponentModal = true">Component +</button>
                     </th>
                 }
                 else
@@ -116,7 +116,7 @@
                         @if (Math.Round(comp.Subcomponents.Sum(s => s.Percentage)) < 100)
                         {
                             <td rowspan="@rowspan">
-                                <button class="btn btn-success" @onclick="() => OpenSubcomponentModal(comp.Id)">Sub +</button>
+                                <button class="btn btn-warning btn-sm" @onclick="() => OpenSubcomponentModal(comp.Id)">Sub +</button>
                             </td>
                         }
                     }
@@ -125,7 +125,7 @@
                         <!-- No subcomponents row -->
                         <td colspan="2" class="text-center text-muted">No subcomponents</td>
                         <td rowspan="@rowspan">
-                            <button class="btn btn-success" @onclick="() => OpenSubcomponentModal(comp.Id)">Sub +</button>
+                            <button class="btn btn-warning btn-sm" @onclick="() => OpenSubcomponentModal(comp.Id)">Sub +</button>
                         </td>   
                     }
                 </tr>
