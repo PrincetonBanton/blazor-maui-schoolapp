@@ -23,14 +23,10 @@ else
                     <th>% of Subject</th>
                     <th>Subcomponent</th>
                     <th>% of Component</th>
-                    <th colspan="4" class="text-center">Items per Grading</th>
-                </tr>
-                <tr>
-                    <th colspan="4"></th>
-                    <th class="text-center">1st</th>
-                    <th class="text-center">2nd</th>
-                    <th class="text-center">3rd</th>
-                    <th class="text-center">4th</th>
+                    <th>1st</th>
+                    <th>2nd</th>
+                    <th>3rd</th>
+                    <th>4th</th>
                 </tr>
             </thead>
             <tbody>
@@ -56,22 +52,29 @@ else
                                 <td>@sub.Name</td>
                                 <td>@sub.Percentage %</td>
 
-                                @for (var grading = 1; grading <= 4; grading++)
+                                @for (int gradingPeriod = 1; gradingPeriod <= 4; gradingPeriod++)
                                 {
-                                    var currentGrading = grading; 
+                                    // Capture the current gradingPeriod value in a new local variable for each iteration
+                                    var currentLoopGradingPeriod = gradingPeriod;
+
+                                    // Get the stored item count for this subcomponent and grading period
+                                    int currentItemCount = itemInputs.TryGetValue((sub.Id, currentLoopGradingPeriod), out int val) ? val : 0;
 
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <input class="form-control form-control-sm me-1" type="number" min="0" style="width: 60px;"
-                                                   @onchange="e => SaveItemCount(sub.Id, currentGrading, e.Value?.ToString())" />
-
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="@(() => LoadResults(sub.Id, currentGrading))">
-                                                Load
-                                            </button>
-                                        </div>
+                                        @if (currentItemCount == 0)
+                                        {
+                                            <span>-</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@currentItemCount</span>
+                                        }
+                                        <button class="btn btn-sm btn-primary ms-1"
+                                                @onclick="() => OpenGradeInputModal(sub.Id, sub.Name, currentLoopGradingPeriod, currentItemCount)">
+                                            Save
+                                        </button>
                                     </td>
                                 }
-
                             }
                             else
                             {
@@ -89,69 +92,131 @@ else
     }
 }
 
-@code {
-    [Parameter]
-    public Guid SubjectId { get; set; }
+@if (ShowGradeInputModal)
+{
+    <div class="modal-backdrop fade show" style="z-index: 1040;"></div>
+    <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Enter Grade for @ModalSubcomponentName (@(ModalGradingPeriod switch { 1 => "1st", 2 => "2nd", 3 => "3rd", 4 => "4th", _ => ModalGradingPeriod.ToString() }))</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="CloseGradeInputModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="itemCountInput" class="form-label">Item Count:</label>
+                        <input type="number" id="itemCountInput" class="form-control" @bind-value="ModalItemCount" min="0" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseGradeInputModal">Cancel</button>
+                    <button class="btn btn-primary" @onclick="HandleGradeSave">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
+
+@code {
+    [Parameter] public Guid SubjectId { get; set; }
     private Subject? Subject;
+
+    // Stores current input values for display/edit, mapping (SubcomponentId, GradingPeriod) to ItemCount
+    private Dictionary<(Guid SubcomponentId, int GradingPeriod), int> itemInputs = new();
+
+    // Modal state variables
+    private bool ShowGradeInputModal = false;
+    private Guid ModalSubcomponentId { get; set; }
+    private string ModalSubcomponentName { get; set; } = string.Empty;
+    private int ModalGradingPeriod { get; set; }
+    private int ModalItemCount { get; set; } // This will be bound to the modal's input
 
     protected override async Task OnInitializedAsync()
     {
-        if (SubjectId != Guid.Empty)
+        if (SubjectId == Guid.Empty) return;
+
+        try
         {
-            try
-            {
-                Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Failed to load subject: {ex.Message}");
-            }
+            Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
+            if (Subject == null) return;
+            await LoadExistingGrades();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error loading data: {ex.Message}");
         }
     }
 
-    private async void SaveItemCount(Guid subcomponentId, int grading, string? inputValue)
+    private async Task LoadExistingGrades()
     {
-        if (int.TryParse(inputValue, out int itemCount))
-        {
-            var item = new SubjectGradingItem
-            {
-                SubjectId = SubjectId,
-                SubcomponentId = subcomponentId,
-                GradingPeriod = grading,
-                ItemCount = itemCount,
-                CreatedAt = DateTime.Now
-            };
+        itemInputs.Clear(); 
 
-            try
+        try
+        {
+            var grades = await Http.GetFromJsonAsync<List<SubjectGradingItem>>($"api/SubjectGradingItem/by-subject/{SubjectId}");
+
+            if (grades != null)
             {
-                var response = await Http.PostAsJsonAsync("api/SubjectGradingItem", item);
-                if (response.IsSuccessStatusCode)
+                foreach (var grade in grades)
                 {
-                    await JS.InvokeVoidAsync("alert", $"Saved!\nGrading: {grading}\nItem Count: {itemCount}");
+                    // Populate the itemInputs dictionary with fetched values
+                    itemInputs[(grade.SubcomponentId, grade.GradingPeriod)] = grade.ItemCount;
                 }
-                else
-                {
-                    var error = await response.Content.ReadAsStringAsync();
-                    await JS.InvokeVoidAsync("alert", $"Failed to save: {error}");
-                }
-            }
-            catch (Exception ex)
-            {
-                await JS.InvokeVoidAsync("alert", $"Error: {ex.Message}");
             }
         }
-        else
+        catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", "Invalid number");
+            await JS.InvokeVoidAsync("console.error", $"Failed to load existing grades: {ex.Message}");
         }
     }
 
-
-
-    private void LoadResults(Guid subcomponentId, int grading)
+    private void OpenGradeInputModal(Guid subcomponentId, string subcomponentName, int gradingPeriod, int currentItemCount)
     {
-        Console.WriteLine($"Load Results for Subcomponent: {subcomponentId}, Grading: {grading}");
-        // TODO: Navigate to student list with subjectId + subcomponentId + grading
+        ModalSubcomponentId = subcomponentId;
+        ModalSubcomponentName = subcomponentName;
+        ModalGradingPeriod = gradingPeriod;
+        ModalItemCount = currentItemCount; 
+        ShowGradeInputModal = true;
+    }
+
+    private void CloseGradeInputModal()
+    {
+        ShowGradeInputModal = false;
+    }
+
+    private async Task HandleGradeSave()
+    {
+        ShowGradeInputModal = false;
+        var subjectGradingItem = new SubjectGradingItem
+        {
+            SubjectId = SubjectId,
+            SubcomponentId = ModalSubcomponentId,
+            GradingPeriod = ModalGradingPeriod, 
+            ItemCount = ModalItemCount
+        };
+
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/SubjectGradingItem", subjectGradingItem);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Update the local dictionary with the new saved value
+                itemInputs[(subjectGradingItem.SubcomponentId, subjectGradingItem.GradingPeriod)] = subjectGradingItem.ItemCount;
+                await JS.InvokeVoidAsync("alert", "Grade saved successfully!");
+                StateHasChanged();
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to save grade: {errorContent}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error saving grade: {ex.Message}");
+        }
     }
 }

@@ -10,7 +10,6 @@ namespace SchoolApp.Server.Controllers;
 public class SubjectController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-
     public SubjectController(ApplicationDbContext context)
     {
         _context = context;
@@ -22,7 +21,6 @@ public class SubjectController : ControllerBase
     {
         return Ok(_context.Subjects.ToList());
     }
-
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Subject>> GetSubject(Guid id)
@@ -39,7 +37,6 @@ public class SubjectController : ControllerBase
 
         return subject;
     }
-
 
     // POST: api/Subject
     [HttpPost]
@@ -101,6 +98,4 @@ public class SubjectController : ControllerBase
 
         return NoContent();
     }
-
-
 }

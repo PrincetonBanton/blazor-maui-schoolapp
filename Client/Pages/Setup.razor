@@ -1,6 +1,9 @@
 ﻿@page "/setup"
 @inject HttpClient Http
 @inject IJSRuntime JS
+@using System.Text.Json
+@using SchoolApp.Shared.Models
+@using SchoolApp.Client.Helpers
 
 <!-- Subject UI -->
 <div class="mb-3">
@@ -199,13 +202,6 @@ else
     <div class="@ValidationMessageClass" style="margin-top: 1rem; font-weight: bold;">@ValidationMessage</div>
 }
 
-
-
-
-@using System.Text.Json
-@using SchoolApp.Shared.Models
-@using SchoolApp.Client.Helpers
-
 @code {
     private Guid? SelectedSubjectId;
     private Guid? SelectedComponentIdForSub = null;
@@ -233,7 +229,6 @@ else
     private string ValidationMessageClass { get; set; }
     private bool IsTemplateStructureValid = false;
     private Subject SelectedSubject => Subjects.FirstOrDefault(s => s.Id == SelectedSubjectId);
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -368,7 +363,6 @@ else
     private async Task ValidateComponentAndSubcomponentPercentages()
     {
         var result = TemplateValidator.Validate(Components);
-
         IsTemplateStructureValid = result.IsValid;
         ValidationMessage = result.Message;
         ValidationMessageClass = result.CssClass;
@@ -441,8 +435,7 @@ else
                 NewSubcomponentName = string.Empty;
                 NewSubcomponentPercentage = 0;
                 ShowAddSubcomponentModal = false;
-
-                await LoadComponents(); // Reload components with subcomponents
+                await LoadComponents(); 
             }
             else
             {
@@ -463,9 +456,8 @@ else
             return;
         }
 
-        var confirm = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to validate this template? This action cannot be undone.");
+        var confirm = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to validate this template?");
         if (!confirm) return;
-
         try
         {
             var response = await Http.PutAsync($"api/subject/validate/{SelectedSubjectId}", null);
@@ -473,7 +465,7 @@ else
             if (response.IsSuccessStatusCode)
             {
                 await JS.InvokeVoidAsync("alert", "Template validated successfully.");
-                await LoadSubjects(); // Refresh subject list to reflect validation state
+                await LoadSubjects();
             }
             else
             {
@@ -486,6 +478,5 @@ else
             await JS.InvokeVoidAsync("alert", $"Error validating template: {ex.Message}");
         }
     }
-
 
 }

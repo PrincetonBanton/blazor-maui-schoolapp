@@ -9,7 +9,6 @@ namespace SchoolApp.Server.Controllers;
 public class SubcomponentController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-
     public SubcomponentController(ApplicationDbContext context)
     {
         _context = context;
