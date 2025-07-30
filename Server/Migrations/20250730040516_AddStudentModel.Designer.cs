@@ -11,8 +11,8 @@ using SchoolApp.Server.Data;
 namespace SchoolApp.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250728032616_AddSubjectGradingItems")]
-    partial class AddSubjectGradingItems
+    [Migration("20250730040516_AddStudentModel")]
+    partial class AddStudentModel
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -41,6 +41,43 @@ namespace SchoolApp.Server.Migrations
                     b.HasIndex("SubjectId");
 
                     b.ToTable("Components");
+                });
+
+            modelBuilder.Entity("SchoolApp.Shared.Models.Student", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ContactNumber")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DateOfBirth")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Gender")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MiddleName")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Students");
                 });
 
             modelBuilder.Entity("SchoolApp.Shared.Models.Subcomponent", b =>

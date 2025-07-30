@@ -5,7 +5,7 @@
 namespace SchoolApp.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddSubjectGradingItems : Migration
+    public partial class AddStudentModel : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

@@ -1,0 +1,125 @@
+﻿@page "/subject/list"
+@inject HttpClient Http
+@inject IJSRuntime JS
+@using System.Text.Json
+@using SchoolApp.Shared.Models
+
+<div class="d-flex align-items-center" style="margin-bottom: 1rem;">
+    <input type="text" class="form-control me-2" placeholder="New Subject Name"
+           style="width: 300px;" @bind="NewSubjectName" />
+    <button class="btn btn-primary" style="width: 200px;" @onclick="AddSubject">Subject +</button>
+</div>
+
+@if (subjects == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!subjects.Any())
+{
+    <p>No subjects found.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Subject Name</th>
+                <th>Validation Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var subject in subjects)
+            {
+                <tr>
+                    <td>@subject.Name</td>
+                    <td>
+                        @if (subject.IsValidated)
+                        {
+                            <span class="text-success">Validated</span>
+                        }
+                        else
+                        {
+                            <span class="text-danger">Not Validated</span>
+                        }
+                    </td>
+                    <td>
+                        @if (subject.IsValidated)
+                        {
+                            <NavLink class="btn btn-primary btn-sm" href="@($"/template/{subject.Id}")">
+                                Open Template
+                            </NavLink>
+                        }
+                        else
+                        {
+                            <NavLink class="btn btn-warning btn-sm" href="@($"/setup?id={subject.Id}")">
+                                Setup Subject
+                            </NavLink>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Subject>? subjects;
+    private string NewSubjectName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubjects();
+    }
+
+    private async Task LoadSubjects()
+    {
+        try
+        {
+            subjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error loading subjects: {ex.Message}");
+        }
+    }
+
+    private async Task AddSubject()
+    {
+        if (string.IsNullOrWhiteSpace(NewSubjectName))
+        {
+            await JS.InvokeVoidAsync("alert", "Subject name cannot be empty.");
+            return;
+        }
+
+        if (subjects!.Any(s => s.Name.Trim().ToLower() == NewSubjectName.Trim().ToLower()))
+        {
+            await JS.InvokeVoidAsync("alert", "Subject already exists.");
+            return;
+        }
+
+        var confirm = await JS.InvokeAsync<bool>("confirm", $"Add subject '{NewSubjectName}'?");
+        if (!confirm) return;
+
+        var newSubject = new Subject { Name = NewSubjectName };
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/subject", newSubject);
+            if (response.IsSuccessStatusCode)
+            {
+                NewSubjectName = string.Empty;
+                await LoadSubjects();
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to add subject: {err}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error adding subject: {ex.Message}");
+        }
+    }
+}

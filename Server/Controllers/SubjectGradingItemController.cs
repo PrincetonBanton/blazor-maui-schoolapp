@@ -79,10 +79,10 @@ public class SubjectGradingItemController : ControllerBase
 
         // Update properties of the existing item
         existingItem.ItemCount = updatedItem.ItemCount;
-        existingItem.GradingPeriod = updatedItem.GradingPeriod; // Ensure all relevant fields are updated
-        existingItem.SubcomponentId = updatedItem.SubcomponentId; // If these could change on edit
-        existingItem.SubjectId = updatedItem.SubjectId;         // If these could change on edit
-        existingItem.CreatedAt = DateTime.Now; // Update timestamp if desired
+        existingItem.GradingPeriod = updatedItem.GradingPeriod; 
+        existingItem.SubcomponentId = updatedItem.SubcomponentId; 
+        existingItem.SubjectId = updatedItem.SubjectId;         
+        existingItem.CreatedAt = DateTime.Now; 
 
         _context.SaveChanges();
 

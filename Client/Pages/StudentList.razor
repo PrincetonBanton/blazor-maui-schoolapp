@@ -1,0 +1,129 @@
+﻿@page "/students/list"
+@inject HttpClient Http
+@inject IJSRuntime JS
+@using System.Text.Json
+@using SchoolApp.Shared.Models
+
+<button class="btn btn-primary mb-2" style="width: 200px;" @onclick="ShowStudentModal">Student +</button>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Full Name</th>
+            <th>Date of Birth</th>
+            <th>Gender</th>
+            <th>Address</th>
+            <th>Contact</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Students.Count == 0)
+        {
+            <tr>
+                <td colspan="6" class="text-center text-muted">No student data to display yet.</td>
+            </tr>
+        }
+        else
+        {
+            @foreach (var student in Students)
+            {
+                <tr>
+                    <td>@student.FullName</td>
+                    <td>@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                    <td>@student.Gender</td>
+                    <td>@student.Address</td>
+                    <td>@student.ContactNumber</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" disabled>Edit</button>
+                        <button class="btn btn-sm btn-danger" disabled>Delete</button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@if (ShowModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Student</h5>
+                    <button type="button" class="btn-close" @onclick="HideStudentModal"></button>
+                </div>
+                <div class="modal-body">
+                    <input class="form-control" placeholder="First Name" style="margin-bottom: 1rem;" @bind="NewStudent.FirstName" />
+                    <input class="form-control" placeholder="Middle Name" style="margin-bottom: 1rem;" @bind="NewStudent.MiddleName" />
+                    <input class="form-control" placeholder="Last Name" style="margin-bottom: 1rem;" @bind="NewStudent.LastName" />
+                    <input type="date" class="form-control" style="margin-bottom: 1rem;" @bind="NewStudent.DateOfBirth" />
+                    <select class="form-control" style="margin-bottom: 1rem;" @bind="NewStudent.Gender">
+                        <option value="">Select Gender...</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                    <input class="form-control" placeholder="Address" style="margin-bottom: 1rem;" @bind="NewStudent.Address" />
+                    <input class="form-control" placeholder="Contact Number" style="margin-bottom: 1rem;" @bind="NewStudent.ContactNumber" />
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="HideStudentModal">Cancel</button>
+                    <button class="btn btn-primary" @onclick="SaveStudentAsync">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Student> Students = new();
+    private Student NewStudent = new();
+    private bool ShowModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStudentsAsync();
+    }
+
+    private async Task LoadStudentsAsync()
+    {
+        try
+        {
+            Students = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading students: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Failed to load students.");
+        }
+    }
+
+    private void ShowStudentModal()
+    {
+        NewStudent = new Student(); // reset form
+        ShowModal = true;
+    }
+
+    private void HideStudentModal()
+    {
+        ShowModal = false;
+    }
+
+    private async Task SaveStudentAsync()
+    {
+        var response = await Http.PostAsJsonAsync("api/student", NewStudent);
+        if (response.IsSuccessStatusCode)
+        {
+            await JS.InvokeVoidAsync("alert", "Student saved!");
+            HideStudentModal();
+            await LoadStudentsAsync(); // reload list
+        }
+        else
+        {
+            var errorMsg = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error: {errorMsg}");
+            await JS.InvokeVoidAsync("alert", $"Failed to save student: {errorMsg}");
+        }
+    }
+}

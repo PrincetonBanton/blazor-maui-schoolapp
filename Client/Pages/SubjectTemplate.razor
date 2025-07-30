@@ -74,21 +74,23 @@ else
                                             @if (currentItemCount == 0)
                                             {
                                                 <span style="text-align: center;">-</span>
-                                                <button class="btn btn-sm btn-primary ms-1"
-                                                        @onclick="() => OpenGradeInputModal(sub.Id, sub.Name, currentLoopGradingPeriod, currentItemCount)">
-                                                    +
-                                                </button>
+                                                <a href="#" class="text-primary text-decoration-none ms-1"
+                                                   @onclick:preventDefault
+                                                   @onclick="() => OpenGradeInputModal(sub.Id, sub.Name, currentLoopGradingPeriod, currentItemCount)">
+                                                    Add
+                                                </a>
                                             }
                                             else
                                             {
                                                 <span style="text-align: center;">@currentItemCount</span>
-                                                <button class="btn btn-sm btn-info ms-1"
-                                                        @onclick="() => OpenGradeEditModal(SubjectId, sub.Id, currentLoopGradingPeriod, currentItemCount, subjectGradingItemId)">
+                                                <a href="#" class="text-info text-decoration-none ms-1"
+                                                   @onclick:preventDefault
+                                                   @onclick="() => OpenGradeEditModal(SubjectId, sub.Id, currentLoopGradingPeriod, currentItemCount, subjectGradingItemId)">
                                                     Edit
-                                                </button>
+                                                </a>
                                                 <button class="btn btn-sm btn-success ms-1"
                                                         @onclick="() => NavigateToItemResult(subjectGradingItemId)">
-                                                    Results
+                                                   Load
                                                 </button>
                                             }
                                         </div>
@@ -119,7 +121,7 @@ else
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Enter Grade for @ModalSubcomponentName (@(ModalGradingPeriod switch { 1 => "1st", 2 => "2nd", 3 => "3rd", 4 => "4th", _ => ModalGradingPeriod.ToString() }))</h5>
+                    <h5 class="modal-title">Enter Item Count</h5>
                     <button type="button" class="btn-close" aria-label="Close" @onclick="CloseGradeInputModal"></button>
                 </div>
                 <div class="modal-body">
@@ -179,9 +181,8 @@ else
         {
             var grades = await Http.GetFromJsonAsync<List<SubjectGradingItem>>($"api/SubjectGradingItem/by-subject/{SubjectId}");
 
-            // This alert is for debugging; you might remove it in production.
-            var json = JsonSerializer.Serialize(grades, new JsonSerializerOptions { WriteIndented = true });
-            await JS.InvokeVoidAsync("alert", $"Fetched Grades:\n{json}");
+            // var json = JsonSerializer.Serialize(grades, new JsonSerializerOptions { WriteIndented = true });
+            // await JS.InvokeVoidAsync("alert", $"Fetched Grades:\n{json}");
 
             if (grades != null)
             {
@@ -194,7 +195,6 @@ else
         }
     }
 
-    // Opens the modal for entering a NEW grade (or editing if currentItemCount is passed)
     private void OpenGradeInputModal(Guid subcomponentId, string subcomponentName, int gradingPeriod, int currentItemCount)
     {
         ModalSubcomponentId = subcomponentId;
@@ -205,7 +205,6 @@ else
         ShowGradeInputModal = true;
     }
 
-    // Opens the modal for editing an EXISTING grade
     private async Task OpenGradeEditModal(Guid subjectId, Guid subcomponentId, int gradingPeriod, int itemCount, Guid? subjectGradingItemId)
     {
         // Format SubjectId for display, handling potential Guid.Empty
@@ -222,7 +221,7 @@ else
 
 
         ModalSubcomponentId = subcomponentId;
-        ModalSubcomponentName = "You'd likely look up the subcomponent name using subcomponentId here, e.g., Subject.Components.FirstOrDefault(c => c.Id == subcomponentId)?.Name;";
+        ModalSubcomponentName = "";
         ModalGradingPeriod = gradingPeriod;
         ModalItemCount = itemCount;
         ModalSubjectGradingItemId = subjectGradingItemId;       // Crucial for identifying the item to update

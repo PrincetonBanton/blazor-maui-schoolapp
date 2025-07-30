@@ -7,8 +7,6 @@
 @using SchoolApp.Shared.Models
 @using System.Text.Json;
 
-<h3>Input Student Results</h3>
-
 @if (SubjectGradingItem == null)
 {
     <p><em>Loading item details...</em></p>
@@ -17,34 +15,35 @@ else
 {
     <div>
         <strong>Subject:</strong> @Subject?.Name <br />
-        <strong>Component:</strong> @Component?.Name (@Component?.Percentage%) <br />
-        <strong>Subcomponent:</strong> @Subcomponent?.Name (@Subcomponent?.Percentage%) <br />
+        <strong>Component:</strong> @Component?.Name <br />
+        <strong>Subcomponent:</strong> @Subcomponent?.Name <br />
         <strong>Grading Period:</strong> @(SubjectGradingItem.GradingPeriod switch { 1 => "1st", 2 => "2nd", 3 => "3rd", 4 => "4th", _ => SubjectGradingItem.GradingPeriod.ToString() }) <br />
-        <strong>Number of Items:</strong> @SubjectGradingItem.ItemCount
+        <strong>Number of Items:</strong> @SubjectGradingItem.ItemCount <br />
+        <strong>Percent to Component:</strong> @Subcomponent?.Percentage% <br />
+        <strong>Percent to Subject:</strong> @(Subcomponent?.Percentage * Component?.Percentage / 100 ?? 0)%
     </div>
-
-    <hr />
-
-    <h4>Student Results</h4>
 
     <table class="table table-bordered table-striped mt-3">
         <thead>
             <tr>
                 <th>Student Name</th>
-                <th>Result (Score)</th>
-                <th>% to Component</th>
+                <th>Result </th>
+                <th>% to Items</th>
                 <th>% to Subject</th>
-                <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            @* We'll add the student rows here in the next step *@
-            <tr>
-                <td colspan="5" class="text-center"><em>No student results loaded yet.</em></td>
-            </tr>
+            @foreach (var student in Students)
+            {
+                <tr>
+                    <td>@($"{student.FirstName} {student.LastName}")</td>
+                    <td><input class="form-control" /></td>
+                    <td>-</td>
+                    <td>-</td>
+                </tr>
+            }
         </tbody>
     </table>
-
 }
 
 @code {
@@ -54,12 +53,12 @@ else
     private Subject? Subject;
     private Component? Component;
     private Subcomponent? Subcomponent;
-    // We'll keep these properties but won't populate the table rows for now.
-    // private List<Student>? Students;
-    // private List<StudentResult> StudentResults = new List<StudentResult>();
+    private List<Student> Students = new();
 
     protected override async Task OnInitializedAsync()
     {
+        Students = await Http.GetFromJsonAsync<List<Student>>("api/student");
+
         if (SubjectGradingItemId == Guid.Empty)
         {
             await JS.InvokeVoidAsync("alert", "Invalid SubjectGradingItem ID.");
@@ -69,9 +68,7 @@ else
 
         try
         {
-            // 1. Get SubjectGradingItem details
             SubjectGradingItem = await Http.GetFromJsonAsync<SubjectGradingItem>($"api/SubjectGradingItem/{SubjectGradingItemId}");
-
             if (SubjectGradingItem == null)
             {
                 await JS.InvokeVoidAsync("alert", "Subject Grading Item not found.");
@@ -79,7 +76,6 @@ else
                 return;
             }
 
-            // 2. Get Subject and its hierarchy to display details and percentages
             Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectGradingItem.SubjectId}");
             if (Subject != null)
             {
@@ -87,11 +83,6 @@ else
                 Subcomponent = Component?.Subcomponents.FirstOrDefault(s => s.Id == SubjectGradingItem.SubcomponentId);
             }
 
-            // --- Commenting out student and student result loading for now ---
-            // Students = await Http.GetFromJsonAsync<List<Student>>($"api/student/by-subject/{SubjectGradingItem.SubjectId}");
-            // Students ??= new List<Student>();
-            // var fetchedResults = await Http.GetFromJsonAsync<List<StudentResult>>($"api/StudentResult/by-subjectgradingitem/{SubjectGradingItemId}");
-            // StudentResults = fetchedResults ?? new List<StudentResult>();
         }
         catch (Exception ex)
         {
@@ -99,10 +90,4 @@ else
             Console.WriteLine($"Error: {ex.Message}");
         }
     }
-
-    // --- Commenting out the UpdateStudentScore method for now ---
-    // private async Task UpdateStudentScore(Guid studentId, int newScore, Guid? studentResultId)
-    // {
-    //     // ... (Existing logic for saving/updating student scores) ...
-    // }
 }

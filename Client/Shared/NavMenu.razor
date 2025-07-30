@@ -20,18 +20,38 @@
             @if (ShowSubjectDropdown)
             {
                 <div class="ms-4">
-                    <NavLink class="nav-link" href="/list">
+                    <NavLink class="nav-link" href="subject/list">
                         <span class="oi oi-list-rich" aria-hidden="true"></span> List
                     </NavLink>
-                    <NavLink class="nav-link" href="/setup">
+                    <NavLink class="nav-link" href="subject/setup">
                         <span class="oi oi-list-rich" aria-hidden="true"></span> Setup
                     </NavLink>
-@*                     <NavLink class="nav-link" href="/template">
-                        <span class="oi oi-list-rich" aria-hidden="true"></span> Template
-                    </NavLink> *@
+                    @* Removed Template as per your comment, assuming it's accessed via other means now *@
                 </div>
             }
         </div>
+
+        @* NEW: Student Dropdown *@
+        <div class="nav-item px-3">
+            <div class="nav-link dropdown-toggle" role="button" @onclick="ToggleStudentDropdown">
+                <span class="oi oi-person" aria-hidden="true"></span> Student
+            </div>
+            @if (ShowStudentDropdown)
+            {
+                <div class="ms-4">
+                    <NavLink class="nav-link" href="/students/list">
+                        @* Adjust href as per your actual student list page *@
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> List
+                    </NavLink>
+                    <NavLink class="nav-link" href="/students/reportcard">
+                        @* Adjust href as per your actual report card page *@
+                        <span class="oi oi-file" aria-hidden="true"></span> Report Card
+                    </NavLink>
+                </div>
+            }
+        </div>
+        @* END NEW: Student Dropdown *@
+
     </nav>
 </div>
 
@@ -39,6 +59,8 @@
 @code {
     private bool collapseNavMenu = true;
     private bool ShowSubjectDropdown = false;
+    private bool ShowStudentDropdown = false; // New property for student dropdown
+
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
     private void ToggleNavMenu()
@@ -49,5 +71,15 @@
     private void ToggleSubjectDropdown()
     {
         ShowSubjectDropdown = !ShowSubjectDropdown;
+        // Optionally close other dropdowns when one opens
+        ShowStudentDropdown = false;
+    }
+
+    // New method for student dropdown
+    private void ToggleStudentDropdown()
+    {
+        ShowStudentDropdown = !ShowStudentDropdown;
+        // Optionally close other dropdowns when one opens
+        ShowSubjectDropdown = false;
     }
 }
