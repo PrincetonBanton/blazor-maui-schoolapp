@@ -23,15 +23,20 @@ else
     <table class="table table-bordered">
         <thead>
             <tr>
+                <th>#</th>
                 <th>Subject Name</th>
                 <th>Validation Status</th>
                 <th>Action</th>
             </tr>
         </thead>
         <tbody>
+            @{
+                var index = 1;
+            }
             @foreach (var subject in subjects)
             {
                 <tr>
+                    <td>@index</td> <!-- Display row number -->
                     <td>@subject.Name</td>
                     <td>
                         @if (subject.IsValidated)
@@ -46,19 +51,21 @@ else
                     <td>
                         @if (subject.IsValidated)
                         {
-                            <NavLink class="btn btn-primary btn-sm" href="@($"/template/{subject.Id}")">
+                            <NavLink class="btn btn-primary btn-sm" href="@($"/subject/template/{subject.Id}")">
                                 Open Template
                             </NavLink>
                         }
                         else
                         {
-                            <NavLink class="btn btn-warning btn-sm" href="@($"/setup?id={subject.Id}")">
+                            <NavLink class="btn btn-warning btn-sm" href="subject/setup">
                                 Setup Subject
                             </NavLink>
                         }
                     </td>
                 </tr>
+                index++;
             }
+
         </tbody>
     </table>
 }

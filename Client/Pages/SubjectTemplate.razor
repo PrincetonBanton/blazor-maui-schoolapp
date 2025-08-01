@@ -1,5 +1,5 @@
-﻿@page "/template"
-@page "/template/{SubjectId:guid}"
+﻿@page "/subject/template"
+@page "/subject/template/{SubjectId:guid}"
 
 @inject NavigationManager NavigationManager
 @inject HttpClient Http
@@ -8,9 +8,30 @@
 @using SchoolApp.Shared.Models
 @using System.Text.Json;
 
+
 @if (Subject == null)
 {
-    <p><em>Loading...</em></p>
+        @if (ValidatedSubjects == null)
+        {
+            <p>Loading...</p>
+        }
+        else if (ValidatedSubjects.Count == 0)
+        {
+            <p>No validated subjects available.</p>
+        }
+        else
+        {
+        <div class="d-flex align-items-center mb-3">
+            <select class="form-select me-2" style="width: 300px;" @onchange="OnValidatedSubjectChanged">
+                <option value="">-- Choose Validated Subject --</option>
+                @foreach (var subject in ValidatedSubjects)
+                {
+                    <option value="@subject.Id">@subject.Name</option>
+                }
+            </select>
+        </div>
+
+        }
 }
 else
 {
@@ -21,14 +42,14 @@ else
         <table class="table table-bordered">
             <thead>
                 <tr>
-                    <th>Component</th>
-                    <th>% of Subject</th>
-                    <th>Subcomponent</th>
-                    <th>% of Component</th>
-                    <th>1st</th>
-                    <th>2nd</th>
-                    <th>3rd</th>
-                    <th>4th</th>
+                    <th class="text-center" style="width: 15%;">Component</th>
+                    <th class="text-center" style="width: 10%;">% of Subject</th>
+                    <th class="text-center" style="width: 15%;">Subcomponent</th>
+                    <th class="text-center" style="width: 10%;">% of Component</th>
+                    <th class="text-center" style="width: 10%;">1st</th>
+                    <th class="text-center" style="width: 10%;">2nd</th>
+                    <th class="text-center" style="width: 10%;">3rd</th>
+                    <th class="text-center" style="width: 10%;">4th</th>
                 </tr>
             </thead>
             <tbody>
@@ -69,32 +90,29 @@ else
                                     int currentItemCount = existingGrade?.ItemCount ?? 0;
                                     Guid? subjectGradingItemId = existingGrade?.Id;
 
-                                    <td>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 5px;">
+                                    <td style="text-align:center">
                                             @if (currentItemCount == 0)
                                             {
-                                                <span style="text-align: center;">-</span>
-                                                <a href="#" class="text-primary text-decoration-none ms-1"
-                                                   @onclick:preventDefault
+                                                <a href="#" @onclick:preventDefault style="text-decoration: none;"
                                                    @onclick="() => OpenGradeInputModal(sub.Id, sub.Name, currentLoopGradingPeriod, currentItemCount)">
-                                                    Add
+                                                    +
                                                 </a>
                                             }
+
                                             else
                                             {
-                                                <span style="text-align: center;">@currentItemCount</span>
-                                                <a href="#" class="text-info text-decoration-none ms-1"
-                                                   @onclick:preventDefault
-                                                   @onclick="() => OpenGradeEditModal(SubjectId, sub.Id, currentLoopGradingPeriod, currentItemCount, subjectGradingItemId)">
-                                                    Edit
+                                            <div class="d-inline-flex align-items-center" style="gap: 10px;">
+                                                <a href="#" @onclick:preventDefault style="text-decoration: none"
+                                                    @onclick="() => OpenGradeEditModal(SubjectId, sub.Id, currentLoopGradingPeriod, currentItemCount, subjectGradingItemId)">
+                                                    @currentItemCount
                                                 </a>
-                                                <button class="btn btn-sm btn-success ms-1"
-                                                        @onclick="() => NavigateToItemResult(subjectGradingItemId)">
-                                                   Load
-                                                </button>
-                                            }
-                                        </div>
 
+                                                <button class="btn btn-warning btn-sm"
+                                                   @onclick="() => NavigateToItemResult(subjectGradingItemId)">
+                                                   Results
+                                                </button>
+                                            </div>
+                                            }
                                     </td>
                                 }
                             }
@@ -145,31 +163,61 @@ else
 
     // Now using a List<SubjectGradingItem> to hold the fetched and managed grade data
     private List<SubjectGradingItem> SubjectGradingItems { get; set; } = new List<SubjectGradingItem>();
-
-    // Modal state variables
+    
     private bool ShowGradeInputModal = false;
     private Guid ModalSubcomponentId { get; set; }
+    private Guid? ModalSubjectGradingItemId { get; set; }
     private string ModalSubcomponentName { get; set; } = string.Empty;
     private int ModalGradingPeriod { get; set; }
-    private int ModalItemCount { get; set; } // This will be bound to the modal's input
-    // This property will hold the ID of the SubjectGradingItem being edited, if any.
-    // It will be null for new entries.
-    private Guid? ModalSubjectGradingItemId { get; set; }
+    private int ModalItemCount { get; set; } 
 
+    private List<Subject> ValidatedSubjects { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    // protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-        if (SubjectId == Guid.Empty) return;
+        // await JS.InvokeVoidAsync("alert", $"SubjectId parameter: {SubjectId}");
+        if (SubjectId == Guid.Empty)
+        {
+            Subject = null;
+            SubjectGradingItems.Clear(); 
+            try
+            {
+                ValidatedSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject/validated");
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Failed to fetch validated subjects: {ex.Message}");
+            }
+            return;
+        }
 
         try
         {
             Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
-            if (Subject == null) return;
+
+            // var subjectJson = JsonSerializer.Serialize(Subject, new JsonSerializerOptions { WriteIndented = true });
+            // await JS.InvokeVoidAsync("alert", $"Fetched Subject object:\n{subjectJson}");
+
+            if (Subject == null || Subject.Id == Guid.Empty)
+            {
+                await JS.InvokeVoidAsync("alert", "Invalid or missing subject data.");
+                return;
+            }
             await LoadExistingGrades();
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error loading data: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error loading subject data: {ex.Message}");
+        }
+    }
+
+
+    private async Task OnValidatedSubjectChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out Guid selectedId))
+        {
+            NavigationManager.NavigateTo($"/subject/template/{selectedId}");
         }
     }
 

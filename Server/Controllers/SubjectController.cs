@@ -98,4 +98,16 @@ public class SubjectController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpGet("validated")]
+    public async Task<ActionResult<IEnumerable<Subject>>> GetValidatedSubjects()
+    {
+        var subjects = await _context.Subjects
+            .Where(s => s.IsValidated)
+            .ToListAsync();
+
+        return Ok(subjects);
+    }
+
+
 }

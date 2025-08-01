@@ -8,6 +8,7 @@
 <table class="table table-bordered">
     <thead>
         <tr>
+            <th>#</th> <!-- Added for numbering -->
             <th>Full Name</th>
             <th>Date of Birth</th>
             <th>Gender</th>
@@ -20,14 +21,16 @@
         @if (Students.Count == 0)
         {
             <tr>
-                <td colspan="6" class="text-center text-muted">No student data to display yet.</td>
+                <td colspan="7" class="text-center text-muted">No student data to display yet.</td>
             </tr>
         }
         else
         {
-            @foreach (var student in Students)
+            var index = 1;
+            foreach (var student in Students)
             {
                 <tr>
+                    <td>@index</td> <!-- Display the row number -->
                     <td>@student.FullName</td>
                     <td>@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
                     <td>@student.Gender</td>
@@ -38,10 +41,12 @@
                         <button class="btn btn-sm btn-danger" disabled>Delete</button>
                     </td>
                 </tr>
+                index++;
             }
         }
     </tbody>
 </table>
+
 
 @if (ShowModal)
 {

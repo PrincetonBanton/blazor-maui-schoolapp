@@ -13,23 +13,35 @@
 }
 else
 {
-    <div>
-        <strong>Subject:</strong> @Subject?.Name <br />
-        <strong>Component:</strong> @Component?.Name <br />
-        <strong>Subcomponent:</strong> @Subcomponent?.Name <br />
-        <strong>Grading Period:</strong> @(SubjectGradingItem.GradingPeriod switch { 1 => "1st", 2 => "2nd", 3 => "3rd", 4 => "4th", _ => SubjectGradingItem.GradingPeriod.ToString() }) <br />
-        <strong>Number of Items:</strong> @SubjectGradingItem.ItemCount <br />
-        <strong>Percent to Component:</strong> @Subcomponent?.Percentage% <br />
-        <strong>Percent to Subject:</strong> @(Subcomponent?.Percentage * Component?.Percentage / 100 ?? 0)%
+    <div class="card shadow-sm mb-3" style="width: 50%;">
+        <div class="card-body p-3">
+            <div class="row">
+                <div class="col">
+                    <strong>Subject:</strong> @Subject?.Name <br />
+                    <strong>Grading Period:</strong> @(SubjectGradingItem.GradingPeriod switch {
+                        1 => "1st", 2 => "2nd", 3 => "3rd", 4 => "4th", _ => SubjectGradingItem.GradingPeriod.ToString()
+                    }) <br />
+                </div>
+                <div class="col">
+                    <strong>Component:</strong> @Component?.Name <br />
+                    <strong>Subcomponent:</strong> @Subcomponent?.Name <br />
+                </div>
+                <div class="col">
+                    <strong>% to Component:</strong> @Subcomponent?.Percentage% <br />
+                    <strong>% to Subject:</strong> @(Subcomponent?.Percentage * Component?.Percentage / 100 ?? 0)% <br />
+                </div>
+            </div>
+        </div>
     </div>
 
     <table class="table table-bordered table-striped mt-3">
         <thead>
             <tr>
-                <th>Student Name</th>
-                <th>Result </th>
-                <th>% to Items</th>
-                <th>% to Subject</th>
+                <th style="width: 40%;">Student Name</th>
+                <th style="width: 15%;">Items</th>
+                <th style="width: 15%;">Result</th>
+                <th style="width: 15%;">% to Items</th>
+                <th style="width: 15%;">% to Subject</th>
             </tr>
         </thead>
         <tbody>
@@ -37,7 +49,12 @@ else
             {
                 <tr>
                     <td>@($"{student.FirstName} {student.LastName}")</td>
-                    <td><input class="form-control" /></td>
+                    <td>@SubjectGradingItem.ItemCount</td>
+                    <td>
+                        <input class="form-control"
+                               @onchange="(e) => HandleScoreChange(e, student.Id)" />
+                    </td>
+
                     <td>-</td>
                     <td>-</td>
                 </tr>
@@ -54,6 +71,8 @@ else
     private Component? Component;
     private Subcomponent? Subcomponent;
     private List<Student> Students = new();
+
+    private Dictionary<Guid, string> StudentScores = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,5 +108,20 @@ else
             await JS.InvokeVoidAsync("alert", $"Error loading item results: {ex.Message}");
             Console.WriteLine($"Error: {ex.Message}");
         }
+
     }
+
+    private void HandleScoreChange(ChangeEventArgs e, Guid studentId)
+    {
+        var inputValue = e.Value?.ToString();
+        OnScoreChanged(studentId, inputValue);
+    }
+
+    private void OnScoreChanged(Guid studentId, string? score)
+    {
+        JS.InvokeVoidAsync("alert", $"Student ID: {studentId}, Score: {score}");
+        // Later you’ll store this score in a dictionary or send it to an API
+    }
+
+
 }
