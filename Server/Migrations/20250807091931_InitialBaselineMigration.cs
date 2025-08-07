@@ -5,7 +5,7 @@
 namespace SchoolApp.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class AddStudentModel : Migration
+    public partial class InitialBaselineMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

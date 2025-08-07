@@ -11,8 +11,8 @@ using SchoolApp.Server.Data;
 namespace SchoolApp.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250730040004_AddStudentEntity")]
-    partial class AddStudentEntity
+    [Migration("20250807091931_InitialBaselineMigration")]
+    partial class InitialBaselineMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -78,6 +78,32 @@ namespace SchoolApp.Server.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Students");
+                });
+
+            modelBuilder.Entity("SchoolApp.Shared.Models.StudentSubScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DateRecorded")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GradingPeriod")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("ScoreObtained")
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SubcomponentId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StudentSubScores");
                 });
 
             modelBuilder.Entity("SchoolApp.Shared.Models.Subcomponent", b =>

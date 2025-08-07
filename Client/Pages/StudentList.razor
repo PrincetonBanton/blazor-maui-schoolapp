@@ -8,13 +8,14 @@
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th>#</th> <!-- Added for numbering -->
+            <th>#</th>
             <th>Full Name</th>
             <th>Date of Birth</th>
             <th>Gender</th>
             <th>Address</th>
             <th>Contact</th>
             <th>Actions</th>
+            <th>Report Card</th> 
         </tr>
     </thead>
     <tbody>
@@ -39,6 +40,9 @@
                     <td>
                         <button class="btn btn-sm btn-warning me-1" disabled>Edit</button>
                         <button class="btn btn-sm btn-danger" disabled>Delete</button>
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-info" href="@($"/students/card/{student.Id}")">View Card</a>
                     </td>
                 </tr>
                 index++;

@@ -1,0 +1,125 @@
+﻿@page "/students/card"
+@page "/students/card/{StudentId:guid}"
+
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@using SchoolApp.Shared.Models
+
+@if (Student == null)
+{
+    @if (AllStudents == null)
+    {
+        <p><em>Loading students...</em></p>
+    }
+    else if (AllStudents.Count == 0)
+    {
+        <p><strong>No students available.</strong></p>
+    }
+    else
+    {
+        <div class="mb-3">
+            <select class="form-select" style="width: 300px;" @onchange="OnStudentSelected">
+                <option value="">-- Choose a Student --</option>
+                @foreach (var s in AllStudents)
+                {
+                    <option value="@s.Id">@s.FullName</option>
+                }
+            </select>
+        </div>
+    }
+}
+else
+{
+    <div class="card shadow-sm mb-4" style="width: 50%;">
+        <div class="card-body">
+            <h5 class="card-title">Student Report Card</h5>
+            <p><strong>ID:</strong> @Student.Id</p>
+            <p><strong>Name:</strong> @Student.FullName</p>
+        </div>
+    </div>
+
+    @if (Subjects == null)
+    {
+        <p>Loading subjects...</p>
+    }
+    else if (!Subjects.Any())
+    {
+        <p>No subjects found for report card.</p>
+    }
+    else
+    {
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>1st Grading</th>
+                    <th>2nd Grading</th>
+                    <th>3rd Grading</th>
+                    <th>4th Grading</th>
+                    <th>Final Grade</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var subject in Subjects)
+                { 
+                    <tr>
+                        <td>@subject.Name</td>
+                        <td class="text-center">0</td> <!-- Static value for now -->
+                        <td class="text-center">0</td>
+                        <td class="text-center">0</td>
+                        <td class="text-center">0</td>
+                        <td class="text-center"><strong>0</strong></td>
+                        <td class="text-center text-success">Passed</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    [Parameter] public Guid StudentId { get; set; }
+
+    private List<Student> AllStudents;
+    private Student? Student;
+
+    private List<Subject> Subjects;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (StudentId == Guid.Empty)
+        {
+            Student = null;
+            try
+            {
+                AllStudents = await Http.GetFromJsonAsync<List<Student>>("api/student");
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Failed to load students: {ex.Message}");
+            }
+        }
+        else
+        {
+            try
+            {
+                Student = await Http.GetFromJsonAsync<Student>($"api/student/{StudentId}");
+                Subjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject");
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Failed to fetch data: {ex.Message}");
+            }
+        }
+    }
+
+    private void OnStudentSelected(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out Guid selectedId))
+        {
+            NavigationManager.NavigateTo($"/students/card/{selectedId}");
+        }
+    }
+}

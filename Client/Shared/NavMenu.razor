@@ -13,6 +13,9 @@
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="oi oi-home" aria-hidden="true"></span> Home
             </NavLink>
+            <NavLink class="nav-link" href="subject/template">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Template
+            </NavLink>
 
             <div class="nav-link dropdown-toggle" role="button" @onclick="ToggleSubjectDropdown">
                 <span class="oi oi-book" aria-hidden="true"></span> Subject
@@ -26,14 +29,13 @@
                     <NavLink class="nav-link" href="subject/setup">
                         <span class="oi oi-list-rich" aria-hidden="true"></span> Setup
                     </NavLink>
-                    <NavLink class="nav-link" href="subject/template">
+                @* <NavLink class="nav-link" href="subject/template">
                         <span class="oi oi-list-rich" aria-hidden="true"></span> Template
-                    </NavLink>
+                    </NavLink> *@
                 </div>
             }
         </div>
 
-        @* NEW: Student Dropdown *@
         <div class="nav-item px-3">
             <div class="nav-link dropdown-toggle" role="button" @onclick="ToggleStudentDropdown">
                 <span class="oi oi-person" aria-hidden="true"></span> Student
@@ -42,17 +44,14 @@
             {
                 <div class="ms-4">
                     <NavLink class="nav-link" href="/students/list">
-                        @* Adjust href as per your actual student list page *@
                         <span class="oi oi-list-rich" aria-hidden="true"></span> List
                     </NavLink>
-                    <NavLink class="nav-link" href="/students/reportcard">
-                        @* Adjust href as per your actual report card page *@
+                    <NavLink class="nav-link" href="/students/card">
                         <span class="oi oi-file" aria-hidden="true"></span> Report Card
                     </NavLink>
                 </div>
             }
         </div>
-        @* END NEW: Student Dropdown *@
 
     </nav>
 </div>

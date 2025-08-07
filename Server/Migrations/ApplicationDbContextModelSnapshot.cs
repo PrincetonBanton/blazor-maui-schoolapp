@@ -77,6 +77,32 @@ namespace SchoolApp.Server.Migrations
                     b.ToTable("Students");
                 });
 
+            modelBuilder.Entity("SchoolApp.Shared.Models.StudentSubScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DateRecorded")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GradingPeriod")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("ScoreObtained")
+                        .HasColumnType("REAL");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SubcomponentId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StudentSubScores");
+                });
+
             modelBuilder.Entity("SchoolApp.Shared.Models.Subcomponent", b =>
                 {
                     b.Property<Guid>("Id")
