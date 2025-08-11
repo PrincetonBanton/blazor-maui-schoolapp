@@ -1,4 +1,4 @@
-﻿@page "/subject/template"
+﻿@* @page "/subject/template" *@
 @page "/subject/template/{SubjectId:guid}"
 
 @inject NavigationManager NavigationManager
@@ -9,32 +9,11 @@
 
 @if (Subject == null)
 {
-        @if (ValidatedSubjects == null)
-        {
-            <p>Loading...</p>
-        }
-        else if (ValidatedSubjects.Count == 0)
-        {
-            <p>No validated subjects available.</p>
-        }
-        else
-        {
-        <div class="d-flex align-items-center mb-3">
-            <select class="form-select me-2" style="width: 300px;" @onchange="OnValidatedSubjectChanged">
-                <option value="">-- Choose Validated Subject --</option>
-                @foreach (var subject in ValidatedSubjects)
-                {
-                    <option value="@subject.Id">@subject.Name</option>
-                }
-            </select>
-        </div>
-
-        }
+   <p>Loading...</p>
 }
 else
 {
     <h4>@Subject.Name</h4>
-
     @if (Subject.Components != null && Subject.Components.Any())
     {
         <table class="table table-bordered">
@@ -53,64 +32,51 @@ else
             <tbody>
                 @foreach (var component in Subject.Components)
                 {
-                    int subCount = component.Subcomponents?.Count ?? 1;
-
-                    for (int i = 0; i < subCount; i++)
+                    int comSubCount = component.Subcomponents?.Count ?? 1; 
+                    for (int i = 0; i < comSubCount; i++)
                     {
-                        var sub = component.Subcomponents != null && i < component.Subcomponents.Count
-                        ? component.Subcomponents[i]
-                        : null;
-
+                        var comSub = component.Subcomponents?.ElementAtOrDefault(i);
                         <tr>
                             @if (i == 0)
                             {
-                                <td rowspan="@subCount">@component.Name</td>
-                                <td rowspan="@subCount">@component.Percentage %</td>
+                                <td rowspan="@comSubCount">@component.Name</td>
+                                <td rowspan="@comSubCount">@component.Percentage %</td>
                             }
 
-                            @if (sub != null)
+                            @if (comSub != null)
                             {
-                                <td>@sub.Name</td>
-                                <td>@sub.Percentage %</td>
+                                <td>@comSub.Name</td>
+                                <td>@comSub.Percentage %</td>
 
                                 @for (int gradingPeriod = 1; gradingPeriod <= 4; gradingPeriod++)
                                 {
-                                    var currentLoopGradingPeriod = gradingPeriod;
+                                    var loopGrading = gradingPeriod;
+                                    var subWithItems = SubjectGradingItems.SingleOrDefault(
+                                        g => g.SubjectId == SubjectId && g.SubcomponentId == comSub.Id && g.GradingPeriod == loopGrading);
 
-                                    // Find the existing grade item for this subcomponent and grading period
-                                    var existingGrade = SubjectGradingItems.FirstOrDefault(
-                                    g => g.SubjectId == SubjectId &&
-                                    g.SubcomponentId == sub.Id &&
-                                    g.GradingPeriod == currentLoopGradingPeriod
-                                    );
-
-                                    // Get currentItemCount and SubjectGradingItemId from the found grade (or default values)
-                                    int currentItemCount = existingGrade?.ItemCount ?? 0;
-                                    Guid? subjectGradingItemId = existingGrade?.Id;
-
+                                    int subItems = subWithItems?.ItemCount ?? 0;
+                                    Guid? subjectGradingItemId = subWithItems?.Id;
                                     <td style="text-align:center">
-                                            @if (currentItemCount == 0)
-                                            {
-                                                <a href="#" @onclick:preventDefault style="text-decoration: none;"
-                                                   @onclick="() => OpenGradeInputModal(sub.Id, sub.Name, currentLoopGradingPeriod, currentItemCount)">
-                                                    +
-                                                </a>
-                                            }
-
-                                            else
-                                            {
-                                            <div class="d-inline-flex align-items-center" style="gap: 10px;">
-                                                <a href="#" @onclick:preventDefault style="text-decoration: none"
-                                                    @onclick="() => OpenGradeEditModal(SubjectId, sub.Id, currentLoopGradingPeriod, currentItemCount, subjectGradingItemId)">
-                                                    @currentItemCount
-                                                </a>
-
-                                                <button class="btn btn-warning btn-sm"
-                                                   @onclick="() => NavigateToItemResult(subjectGradingItemId)">
-                                                   Results
-                                                </button>
+                                        @if (subItems == 0)
+                                        {
+                                            <div style="display:inline-block; border:1px solid #ccc; border-radius:4px; padding:4px 8px; min-width:100px; text-align:center; cursor:pointer;"
+                                                 @onclick="() => OpenGradeInputModal(comSub.Id, comSub.Name, loopGrading, subItems)">
+                                                +
                                             </div>
-                                            }
+                                        }
+                                        else
+                                        {
+                                        <div class="d-inline-flex align-items-center" style="gap: 10px;">
+                                            <div style="display:inline-block; border:1px solid #ccc; border-radius:4px; padding:4px 8px; min-width:50px; text-align:center; cursor:pointer;"
+                                                @onclick="() => OpenGradeEditModal(SubjectId, comSub.Id, loopGrading, subItems, subjectGradingItemId)">
+                                                @subItems
+                                            </div>
+                                            <button class="btn btn-warning btn-sm"
+                                                @onclick="() => NavigateToItemResult(subjectGradingItemId)">
+                                                Scores
+                                            </button>
+                                        </div>
+                                        }
                                     </td>
                                 }
                             }
@@ -135,7 +101,7 @@ else
     <div class="modal-backdrop fade show" style="z-index: 1040;"></div>
     <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
+            <div class="modal-content"> 
                 <div class="modal-header">
                     <h5 class="modal-title">Enter Item Count</h5>
                     <button type="button" class="btn-close" aria-label="Close" @onclick="CloseGradeInputModal"></button>
@@ -158,8 +124,6 @@ else
 @code {
     [Parameter] public Guid SubjectId { get; set; }
     private Subject? Subject;
-
-    // Now using a List<SubjectGradingItem> to hold the fetched and managed grade data
     private List<SubjectGradingItem> SubjectGradingItems { get; set; } = new List<SubjectGradingItem>();
     
     private bool ShowGradeInputModal = false;
@@ -169,70 +133,21 @@ else
     private int ModalGradingPeriod { get; set; }
     private int ModalItemCount { get; set; } 
 
-    private List<Subject> ValidatedSubjects { get; set; }
-
-    // protected override async Task OnInitializedAsync()
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
-        // await JS.InvokeVoidAsync("alert", $"SubjectId parameter: {SubjectId}");
-        if (SubjectId == Guid.Empty)
-        {
-            Subject = null;
-            SubjectGradingItems.Clear(); 
-            try
-            {
-                ValidatedSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject/validated");
-            }
-            catch (Exception ex)
-            {
-                await JS.InvokeVoidAsync("alert", $"Failed to fetch validated subjects: {ex.Message}");
-            }
-            return;
-        }
-
-        try
-        {
-            Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
-
-            // var subjectJson = JsonSerializer.Serialize(Subject, new JsonSerializerOptions { WriteIndented = true });
-            // await JS.InvokeVoidAsync("alert", $"Fetched Subject object:\n{subjectJson}");
-
-            if (Subject == null || Subject.Id == Guid.Empty)
-            {
-                await JS.InvokeVoidAsync("alert", "Invalid or missing subject data.");
-                return;
-            }
-            await LoadExistingGrades();
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Error loading subject data: {ex.Message}");
-        }
+        Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
+        await LoadExistingItems();
     }
 
-
-    private async Task OnValidatedSubjectChanged(ChangeEventArgs e)
+    private async Task LoadExistingItems()
     {
-        if (Guid.TryParse(e.Value?.ToString(), out Guid selectedId))
-        {
-            NavigationManager.NavigateTo($"/subject/template/{selectedId}");
-        }
-    }
-
-    private async Task LoadExistingGrades()
-    {
-        SubjectGradingItems.Clear(); // Clear existing data before loading fresh data
-
+        SubjectGradingItems.Clear(); 
         try
         {
-            var grades = await Http.GetFromJsonAsync<List<SubjectGradingItem>>($"api/SubjectGradingItem/by-subject/{SubjectId}");
-
-            // var json = JsonSerializer.Serialize(grades, new JsonSerializerOptions { WriteIndented = true });
-            // await JS.InvokeVoidAsync("alert", $"Fetched Grades:\n{json}");
-
-            if (grades != null)
+            var items = await Http.GetFromJsonAsync<List<SubjectGradingItem>>($"api/SubjectGradingItem/by-subject/{SubjectId}");
+            if (items != null)
             {
-                SubjectGradingItems.AddRange(grades); // Add all fetched items to our list
+                SubjectGradingItems.AddRange(items); 
             }
         }
         catch (Exception ex)
@@ -253,25 +168,12 @@ else
 
     private async Task OpenGradeEditModal(Guid subjectId, Guid subcomponentId, int gradingPeriod, int itemCount, Guid? subjectGradingItemId)
     {
-        // Format SubjectId for display, handling potential Guid.Empty
-        string subjectIdDisplay = subjectId != Guid.Empty ? subjectId.ToString() : "N/A";
-
-        if (subjectGradingItemId.HasValue)
-        {
-            await JS.InvokeVoidAsync("alert", $"Editing Grade:\nSubject ID: {subjectIdDisplay}\nSubcomponent ID: {subcomponentId}\nGrading Period: {gradingPeriod}\nItem Count: {itemCount}\nSubjectGradingItem ID: {subjectGradingItemId.Value}");
-        }
-        else
-        {
-            await JS.InvokeVoidAsync("alert", $"Editing Grade:\nSubject ID: {subjectIdDisplay}\nSubcomponent ID: {subcomponentId}\nGrading Period: {gradingPeriod}\nNo existing SubjectGradingItem ID found.\nItem Count: {itemCount}");
-        }
-
-
         ModalSubcomponentId = subcomponentId;
         ModalSubcomponentName = "";
         ModalGradingPeriod = gradingPeriod;
         ModalItemCount = itemCount;
-        ModalSubjectGradingItemId = subjectGradingItemId;       // Crucial for identifying the item to update
-        ShowGradeInputModal = true;                             // You can reuse the same modal by setting its properties
+        ModalSubjectGradingItemId = subjectGradingItemId;      
+        ShowGradeInputModal = true;                             
     }
 
     private void CloseGradeInputModal()
@@ -281,7 +183,7 @@ else
 
     private async Task HandleGradeSave()
     {
-        ShowGradeInputModal = false; // Close the modal
+        ShowGradeInputModal = false; 
         var subjectGradingItem = new SubjectGradingItem
         {
             SubjectId = SubjectId,
@@ -294,16 +196,13 @@ else
         {
             HttpResponseMessage response;
 
-            // Determine if we are saving a new item (POST) or updating an existing one (PUT)
             if (ModalSubjectGradingItemId.HasValue && ModalSubjectGradingItemId.Value != Guid.Empty)
             {
-                // This is an EDIT (PUT) operation
                 subjectGradingItem.Id = ModalSubjectGradingItemId.Value; // Assign the existing ID
                 response = await Http.PutAsJsonAsync($"api/SubjectGradingItem/{subjectGradingItem.Id}", subjectGradingItem);
             }
             else
             {
-                // This is a SAVE (POST) operation for a new item
                 response = await Http.PostAsJsonAsync("api/SubjectGradingItem", subjectGradingItem);
             }
 
@@ -327,18 +226,18 @@ else
                     }
                 }
 
-                await JS.InvokeVoidAsync("alert", "Grade saved successfully!");
-                StateHasChanged(); // Re-render the component to reflect the changes in the table
+                await JS.InvokeVoidAsync("alert", "Items saved successfully!");
+                StateHasChanged();
             }
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("alert", $"Failed to save grade: {errorContent}");
+                await JS.InvokeVoidAsync("alert", $"Failed to save items: {errorContent}");
             }
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error saving grade: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error saving items: {ex.Message}");
         }
     }
 
@@ -353,4 +252,5 @@ else
             JS.InvokeVoidAsync("alert", "Cannot input results: No valid SubjectGradingItem ID found.");
         }
     }
+
 }

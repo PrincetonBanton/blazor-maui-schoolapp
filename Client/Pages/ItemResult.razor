@@ -60,11 +60,21 @@ else
                 <td>@index</td> 
                 <td>@($"{student.FirstName} {student.LastName}")</td>
                 <td>@itemCount</td>
+
                 <td>
+                    @if (SubjectGradingItem != null)
+                    {
+                        var debugInfo = $"SubjectId: {SubjectGradingItem.SubjectId}\n" +
+                                        $"SubcomponentId: {SubjectGradingItem.SubcomponentId}\n" +
+                                        $"GradingPeriod: {SubjectGradingItem.GradingPeriod}";
+                         JS.InvokeVoidAsync("alert", debugInfo);
+                    }
+
                     <input class="form-control"
                            value="@score"
                            @onchange="(e) => HandleScoreChange(e, student.Id)" />
                 </td>
+
                 <td>@percentToItems</td>
                 <td>@percentToSubject</td>
             </tr>
@@ -86,8 +96,9 @@ else
     private Component? Component;
     private Subcomponent? Subcomponent;
     private List<Student> Students = new();
+    private Dictionary<Guid, int> StudentScores = new(); 
+    private List<StudentSubScore> StudentScores_ = new();
 
-    private Dictionary<Guid, int> StudentScores = new(); // studentId -> score
 
     protected override async Task OnInitializedAsync()
     {
@@ -124,6 +135,22 @@ else
             Console.WriteLine($"Error: {ex.Message}");
         }
 
+    }
+    private async Task LoadExistingScores()
+    {
+        StudentScores_.Clear(); 
+        try
+        {
+            // var scores = await Http.GetFromJsonAsync<List<SubjectGradingItem>>($"api/SubjectGradingItem/by-subject/{ItemId}");
+            // if (scores != null)
+            // {
+            //     StudentScores_.AddRange(scores); 
+            // }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Failed to load existing scores: {ex.Message}");
+        }
     }
 
     private void HandleScoreChange(ChangeEventArgs e, Guid studentId)

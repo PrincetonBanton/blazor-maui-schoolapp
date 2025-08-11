@@ -51,13 +51,13 @@ else
                     <td>
                         @if (subject.IsValidated)
                         {
-                            <NavLink class="btn btn-primary btn-sm" href="@($"/subject/template/{subject.Id}")">
+                            <NavLink class="btn btn-primary btn-sm" style="width:140px; height:30px;" href="@($"/subject/template/{subject.Id}")">
                                 Open Template
                             </NavLink>
                         }
                         else
                         {
-                            <NavLink class="btn btn-warning btn-sm" href="subject/setup">
+                            <NavLink class="btn btn-warning btn-sm" style="width:140px; height:30px;" href="subject/setup">
                                 Setup Subject
                             </NavLink>
                         }
@@ -129,4 +129,8 @@ else
             await JS.InvokeVoidAsync("alert", $"Error adding subject: {ex.Message}");
         }
     }
+
+    //JS.InvokeVoidAsync("alert", $"subcount: {component}");
+    //var json = JsonSerializer.Serialize(component, new JsonSerializerOptions { WriteIndented = true });
+    //JS.InvokeVoidAsync("alert", json);
 }

@@ -201,6 +201,7 @@ else
     private Guid? SelectedComponentIdForSub = null;
     private List<Subject> Subjects = new();
     private List<Component> Components = new();
+    private List<Subcomponent> SubComponents = new();
 
     private bool ShowAddComponentModal = false;
     private string NewComponentName = string.Empty;
@@ -264,7 +265,7 @@ else
     }
 
     private async Task LoadComponents()
-    {
+    {   
         if (SelectedSubjectId == Guid.Empty)
         {
             await JS.InvokeVoidAsync("alert", "Please select a valid subject.");
@@ -273,33 +274,30 @@ else
 
         try
         {
-            var response = await Http.GetAsync($"api/Subject/{SelectedSubjectId}/Components");
-            var content = await response.Content.ReadAsStringAsync();
+            var rescomp = await Http.GetAsync($"api/Subject/{SelectedSubjectId}/Components");
 
-            if (!response.IsSuccessStatusCode)
+            if (!rescomp.IsSuccessStatusCode)
             {
-                await JS.InvokeVoidAsync("alert", $"Failed to load components:\n{content}");
+                var errorContent = await rescomp.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to load components:\n{errorContent}");
                 return;
             }
-
-            var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            Components = JsonSerializer.Deserialize<List<Component>>(content, options) ?? new List<Component>();
+            Components = await rescomp.Content.ReadFromJsonAsync<List<Component>>() ?? new List<Component>();
 
             foreach (var comp in Components)
             {
-                var subRes = await Http.GetAsync($"api/Subcomponent/by-component/{comp.Id}");
-                var subContent = await subRes.Content.ReadAsStringAsync();
+                var resub = await Http.GetAsync($"api/Subcomponent/by-component/{comp.Id.ToString().ToUpper()}");
 
-                if (subRes.IsSuccessStatusCode)
+                if (!resub.IsSuccessStatusCode)
                 {
-                    comp.Subcomponents = JsonSerializer.Deserialize<List<Subcomponent>>(subContent, options) ?? new List<Subcomponent>();
+ 
+                    var errorContent = await resub.Content.ReadAsStringAsync();
+                    await JS.InvokeVoidAsync("alert", $"Failed to load components:\n{errorContent}");
+                    return;
                 }
-                else
-                {
-                    comp.Subcomponents = new List<Subcomponent>();
-                    await JS.InvokeVoidAsync("console.warn", $"Failed to load subcomponents for component {comp.Name}");
-                }
+                comp.Subcomponents = await resub.Content.ReadFromJsonAsync<List<Subcomponent>>() ?? new List<Subcomponent>();
             }
+
 
             // Trigger validation after data has loaded and rendered
             StateHasChanged(); // Let the UI update first
@@ -336,7 +334,6 @@ else
             SubjectId = SelectedSubjectId.Value
         };
 
-        // Show serialized object before sending
         var json = JsonSerializer.Serialize(newComponent, new JsonSerializerOptions { WriteIndented = true });
         await JS.InvokeVoidAsync("alert", $"Component to post:\n{json}");
 
