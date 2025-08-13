@@ -1,4 +1,4 @@
-﻿@page "/itemresult/{SubjectGradingItemId:guid}"
+﻿@page "/itemresult/{SubGradingItemId:guid}"
 
 @inject HttpClient Http
 @inject IJSRuntime JS
@@ -7,7 +7,7 @@
 @using SchoolApp.Shared.Models
 @using System.Text.Json;
 
-@if (SubjectGradingItem == null)
+@if (SubGradingItem == null)
 {
     <p><em>Loading item details...</em></p>
 }
@@ -18,8 +18,8 @@ else
             <div class="row">
                 <div class="col">
                     <strong>Subject:</strong> @Subject?.Name <br />
-                    <strong>Grading Period:</strong> @(SubjectGradingItem.GradingPeriod switch {
-                        1 => "1st", 2 => "2nd", 3 => "3rd", 4 => "4th", _ => SubjectGradingItem.GradingPeriod.ToString()
+                    <strong>Grading Period:</strong> @(SubGradingItem.GradingPeriod switch {
+                        1 => "1st", 2 => "2nd", 3 => "3rd", 4 => "4th", _ => SubGradingItem.GradingPeriod.ToString()
                     }) <br />
                 </div>
                 <div class="col">
@@ -52,7 +52,7 @@ else
         @foreach (var student in Students)
         {
             var score = GetScore(student.Id);
-            var itemCount = SubjectGradingItem.ItemCount;
+            var itemCount = SubGradingItem.ItemCount;
             var percentToItems = itemCount > 0 ? (double)score / itemCount * 100 : 0;
             var percentToSubject = percentToItems * ((Subcomponent?.Percentage ?? 0) * (Component?.Percentage ?? 0)) / 10000;
 
@@ -62,9 +62,9 @@ else
                 <td>@itemCount</td>
 
                 <td>
-                    @if (SubjectGradingItem != null)
+                    @if (SubGradingItem != null)
                     {
-                        var json = JsonSerializer.Serialize(SubjectGradingItem, new JsonSerializerOptions { WriteIndented = true });
+                        var json = JsonSerializer.Serialize(SubGradingItem, new JsonSerializerOptions { WriteIndented = true });
                         JS.InvokeVoidAsync("alert", json);
                     }
 
@@ -87,9 +87,9 @@ else
 }
 
 @code {
-    [Parameter] public Guid SubjectGradingItemId { get; set; }
+    [Parameter] public Guid SubGradingItemId { get; set; }
 
-    private SubjectGradingItem? SubjectGradingItem;
+    private SubGradingItem? SubGradingItem;
     private Subject? Subject;
     private Component? Component;
     private Subcomponent? Subcomponent;
@@ -102,7 +102,7 @@ else
     {
         Students = await Http.GetFromJsonAsync<List<Student>>("api/student");
 
-        if (SubjectGradingItemId == Guid.Empty)
+        if (SubGradingItemId == Guid.Empty)
         {
             await JS.InvokeVoidAsync("alert", "Invalid SubjectGradingItem ID.");
             NavigationManager.NavigateTo("/");
@@ -111,19 +111,19 @@ else
 
         try
         {
-            SubjectGradingItem = await Http.GetFromJsonAsync<SubjectGradingItem>($"api/SubjectGradingItem/{SubjectGradingItemId}");
-            if (SubjectGradingItem == null)
+            SubGradingItem = await Http.GetFromJsonAsync<SubGradingItem>($"api/SubGradingItem/{SubGradingItemId}");
+            if (SubGradingItem == null)
             {
                 await JS.InvokeVoidAsync("alert", "Subject Grading Item not found.");
                 NavigationManager.NavigateTo("/");
                 return;
             }
 
-            Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectGradingItem.SubjectId}");
+            Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubGradingItem.SubjectId}");
             if (Subject != null)
             {
-                Component = Subject.Components?.FirstOrDefault(c => c.Subcomponents.Any(s => s.Id == SubjectGradingItem.SubcomponentId));
-                Subcomponent = Component?.Subcomponents.FirstOrDefault(s => s.Id == SubjectGradingItem.SubcomponentId);
+                Component = Subject.Components?.FirstOrDefault(c => c.Subcomponents.Any(s => s.Id == SubGradingItem.SubcomponentId));
+                Subcomponent = Component?.Subcomponents.FirstOrDefault(s => s.Id == SubGradingItem.SubcomponentId);
             }
 
         }
@@ -167,10 +167,10 @@ else
             return;
         }
 
-        if (SubjectGradingItem != null && parsedScore > SubjectGradingItem.ItemCount)
+        if (SubGradingItem != null && parsedScore > SubGradingItem.ItemCount)
         {
-            await JS.InvokeVoidAsync("alert", $"Score cannot be greater than {SubjectGradingItem.ItemCount}.");
-            StudentScores[studentId] = SubjectGradingItem.ItemCount;
+            await JS.InvokeVoidAsync("alert", $"Score cannot be greater than {SubGradingItem.ItemCount}.");
+            StudentScores[studentId] = SubGradingItem.ItemCount;
         }
         else
         {
@@ -188,7 +188,7 @@ else
     private async Task ConfirmSaveAll()
     {
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to save all scores?");
-        if (!confirmed || SubjectGradingItem == null)
+        if (!confirmed || SubGradingItem == null)
             return;
 
         var payload = new List<StudentSubScore>();
@@ -201,8 +201,8 @@ else
             payload.Add(new StudentSubScore
             {
                 StudentId = studentId,
-                SubcomponentId = SubjectGradingItem.SubcomponentId,
-                GradingPeriod = SubjectGradingItem.GradingPeriod,
+                SubcomponentId = SubGradingItem.SubcomponentId,
+                GradingPeriod = SubGradingItem.GradingPeriod,
                 ScoreObtained = score,
                 DateRecorded = DateTime.Now
             });
