@@ -59,8 +59,8 @@ public class SubcomponentController : ControllerBase
 
         sub.Name = updated.Name;
         sub.Percentage = updated.Percentage;
-        sub.Items = updated.Items;
-        sub.Score = updated.Score;
+        //sub.Items = updated.Items;
+        //sub.Score = updated.Score;
         sub.ComponentId = updated.ComponentId;
 
         _context.SaveChanges();

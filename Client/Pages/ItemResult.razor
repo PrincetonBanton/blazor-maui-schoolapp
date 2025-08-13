@@ -64,10 +64,8 @@ else
                 <td>
                     @if (SubjectGradingItem != null)
                     {
-                        var debugInfo = $"SubjectId: {SubjectGradingItem.SubjectId}\n" +
-                                        $"SubcomponentId: {SubjectGradingItem.SubcomponentId}\n" +
-                                        $"GradingPeriod: {SubjectGradingItem.GradingPeriod}";
-                         JS.InvokeVoidAsync("alert", debugInfo);
+                        var json = JsonSerializer.Serialize(SubjectGradingItem, new JsonSerializerOptions { WriteIndented = true });
+                        JS.InvokeVoidAsync("alert", json);
                     }
 
                     <input class="form-control"

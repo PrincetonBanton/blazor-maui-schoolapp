@@ -19,8 +19,7 @@ namespace SchoolApp.Server.Data
         public DbSet<Student> Students { get; set; }
         public DbSet<SubjectGradingItem> SubjectGradingItems { get; set; }
         public DbSet<StudentSubScore> StudentSubScores { get; set; }
-
-
-
+        public DbSet<SubGradingItem> SubGradingItems { get; set; }
+        public DbSet<SubGradingScore> SubGradingScores { get; set; }
     }
 }

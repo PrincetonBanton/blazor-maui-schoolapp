@@ -1,6 +1,6 @@
 ﻿namespace SchoolApp.Shared.Models;
 
-public class SubjectGradingItem
+public class SubGradingItem
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid SubjectId { get; set; }

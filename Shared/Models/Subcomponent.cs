@@ -7,7 +7,4 @@ public class Subcomponent
     public string Name { get; set; } = string.Empty;
     public double Percentage { get; set; }
 
-    // Scoring
-    public int Items { get; set; }
-    public int Score { get; set; }
 }
