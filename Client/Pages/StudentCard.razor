@@ -63,29 +63,39 @@ else
             </thead>
             <tbody>
                 @foreach (var subject in Subjects)
-                { 
+                {
+                    var first = GetSubjectGrade(subject.Id, 1);
+                    var second = GetSubjectGrade(subject.Id, 2);
+                    var third = GetSubjectGrade(subject.Id, 3);
+                    var fourth = GetSubjectGrade(subject.Id, 4);
+
+                    var finalGrade = (first + second + third + fourth) / 4;
+                    var remarks = finalGrade >= 75 ? "Passed" : "Failed";
+                    var remarksClass = finalGrade >= 75 ? "text-success" : "text-danger";
+
                     <tr>
                         <td>@subject.Name</td>
-                        <td class="text-center">0</td>
-                        <td class="text-center">0</td>
-                        <td class="text-center">0</td>
-                        <td class="text-center">0</td>
-                        <td class="text-center"><strong>0</strong></td>
-                        <td class="text-center text-success">Passed</td>
+                        <td class="text-center">@first</td>
+                        <td class="text-center">@second</td>
+                        <td class="text-center">@third</td>
+                        <td class="text-center">@fourth</td>
+                        <td class="text-center"><strong>@finalGrade</strong></td>
+                        <td class="text-center @remarksClass">@remarks</td>
                     </tr>
                 }
             </tbody>
+
         </table>
     }
 }
 
 @code {
     [Parameter] public Guid StudentId { get; set; }
-
-    private List<Student> AllStudents;
     private Student? Student;
-
+    private List<Student> AllStudents;
     private List<Subject> Subjects;
+    private List<SubGradingItem> SubGradingItems = new();
+    private List<SubGradingScore> SubGradingScores = new();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -107,6 +117,8 @@ else
             {
                 Student = await Http.GetFromJsonAsync<Student>($"api/student/{StudentId}");
                 Subjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject");
+                SubGradingItems = await Http.GetFromJsonAsync<List<SubGradingItem>>("api/SubGradingItem");
+                SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>("api/SubGradingScore/by-student/" + StudentId);
             }
             catch (Exception ex)
             {
@@ -115,7 +127,37 @@ else
         }
     }
 
-    private void OnStudentSelected(ChangeEventArgs e)
+    private double GetSubjectGrade(Guid subjectId, int gradingPeriod)
+    {
+        var subject = Subjects.FirstOrDefault(s => s.Id == subjectId);
+        if (subject == null) return 0;
+
+        double total = 0;
+
+        foreach (var comp in subject.Components)
+        {
+            foreach (var sub in comp.Subcomponents)
+            {
+                var scores = SubGradingScores.Where(sc =>
+                    sc.SubcomponentId == sub.Id &&
+                    sc.GradingPeriod == gradingPeriod);
+
+                foreach (var sc in scores)
+                {
+                    var item = SubGradingItems.FirstOrDefault(i => i.Id == sc.SubGradingItemId);
+                    if (item == null || item.ItemCount == 0) continue;
+
+                    var percentToItems = (sc.ScoreObtained / (double)item.ItemCount) * 100;
+                    var percentToSubject = percentToItems * (sub.Percentage * comp.Percentage) / 10000;
+                    total += percentToSubject;
+                }
+            }
+        }
+
+        return Math.Round(total, 2);
+    }
+
+     private void OnStudentSelected(ChangeEventArgs e)
     {
         if (Guid.TryParse(e.Value?.ToString(), out Guid selectedId))
         {
@@ -123,3 +165,4 @@ else
         }
     }
 }
+

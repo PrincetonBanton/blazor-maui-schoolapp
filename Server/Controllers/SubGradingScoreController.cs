@@ -35,6 +35,17 @@ public class SubGradingScoreController : ControllerBase
         return score;
     }
 
+    // GET: api/SubGradingScore/ByItem/{subGradingItemId}
+    [HttpGet("ByItem/{subGradingItemId}")]
+    public async Task<ActionResult<IEnumerable<SubGradingScore>>> GetScoresByItem(Guid subGradingItemId)
+    {
+        var scores = await _context.SubGradingScores
+            .Where(s => s.SubGradingItemId == subGradingItemId)
+            .ToListAsync();
+
+        return Ok(scores);
+    }
+
     // POST: api/SubGradingScore
     [HttpPost]
     public async Task<ActionResult<SubGradingScore>> PostSubGradingScore(SubGradingScore score)

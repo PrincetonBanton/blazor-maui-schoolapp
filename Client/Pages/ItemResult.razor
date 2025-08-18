@@ -2,10 +2,9 @@
 
 @inject HttpClient Http
 @inject IJSRuntime JS
-@inject NavigationManager NavigationManager
-
-@using SchoolApp.Shared.Models
 @using System.Text.Json;
+@using SchoolApp.Shared.Models
+@inject NavigationManager NavigationManager
 
 @if (SubGradingItem == null)
 {
@@ -55,24 +54,16 @@ else
             var itemCount = SubGradingItem.ItemCount;
             var percentToItems = itemCount > 0 ? (double)score / itemCount * 100 : 0;
             var percentToSubject = percentToItems * ((Subcomponent?.Percentage ?? 0) * (Component?.Percentage ?? 0)) / 10000;
-
+            
+           @*  JS.InvokeVoidAsync("alert", $"studentid: {student.Id}"); *@
             <tr>
                 <td>@index</td> 
                 <td>@($"{student.FirstName} {student.LastName}")</td>
                 <td>@itemCount</td>
-
                 <td>
-                    @if (SubGradingItem != null)
-                    {
-                        var json = JsonSerializer.Serialize(SubGradingItem, new JsonSerializerOptions { WriteIndented = true });
-                        JS.InvokeVoidAsync("alert", json);
-                    }
-
-                    <input class="form-control"
-                           value="@score"
+                    <input class="form-control" value="@score"
                            @onchange="(e) => HandleScoreChange(e, student.Id)" />
                 </td>
-
                 <td>@percentToItems</td>
                 <td>@percentToSubject</td>
             </tr>
@@ -94,9 +85,8 @@ else
     private Component? Component;
     private Subcomponent? Subcomponent;
     private List<Student> Students = new();
-    private Dictionary<Guid, int> StudentScores = new(); 
-    private List<StudentSubScore> StudentScores_ = new();
-
+    private List<SubGradingItem> SubGradingItems = new();
+    private List<SubGradingScore> SubGradingScores = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -126,29 +116,22 @@ else
                 Subcomponent = Component?.Subcomponents.FirstOrDefault(s => s.Id == SubGradingItem.SubcomponentId);
             }
 
+            SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>(
+                $"api/SubGradingScore/ByItem/{SubGradingItem.Id}"
+            ) ?? new List<SubGradingScore>();
+            // var json = JsonSerializer.Serialize(SubGradingScores, new JsonSerializerOptions { WriteIndented = true });
+            // JS.InvokeVoidAsync("alert", json);
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Error loading item results: {ex.Message}");
             Console.WriteLine($"Error: {ex.Message}");
         }
-
     }
-    private async Task LoadExistingScores()
+
+    private Double GetScore(Guid studentId)
     {
-        StudentScores_.Clear(); 
-        try
-        {
-            // var scores = await Http.GetFromJsonAsync<List<SubjectGradingItem>>($"api/SubjectGradingItem/by-subject/{ItemId}");
-            // if (scores != null)
-            // {
-            //     StudentScores_.AddRange(scores); 
-            // }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("console.error", $"Failed to load existing scores: {ex.Message}");
-        }
+        return SubGradingScores.FirstOrDefault(s => s.StudentId == studentId)?.ScoreObtained ?? 0;
     }
 
     private void HandleScoreChange(ChangeEventArgs e, Guid studentId)
@@ -161,7 +144,7 @@ else
     {
         if (!int.TryParse(score, out int parsedScore))
         {
-            StudentScores[studentId] = 0;
+            SetOrUpdateStudentScore(studentId, 0);
             await JS.InvokeVoidAsync("alert", "Invalid number entered.");
             StateHasChanged();
             return;
@@ -170,19 +153,36 @@ else
         if (SubGradingItem != null && parsedScore > SubGradingItem.ItemCount)
         {
             await JS.InvokeVoidAsync("alert", $"Score cannot be greater than {SubGradingItem.ItemCount}.");
-            StudentScores[studentId] = SubGradingItem.ItemCount;
+            SetOrUpdateStudentScore(studentId, SubGradingItem.ItemCount);
         }
         else
         {
-            StudentScores[studentId] = parsedScore;
+            SetOrUpdateStudentScore(studentId, parsedScore);
         }
 
-        StateHasChanged(); // re-render the table
+        StateHasChanged();
     }
 
-    private int GetScore(Guid studentId)
+    private void SetOrUpdateStudentScore(Guid studentId, int score)
     {
-        return StudentScores.TryGetValue(studentId, out var score) ? score : 0;
+        var existing = SubGradingScores.FirstOrDefault(s => s.StudentId == studentId);
+        if (existing != null)
+        {
+            existing.ScoreObtained = score;
+            existing.DateRecorded = DateTime.Now;
+        }
+        else if (SubGradingItem != null)
+        {
+            SubGradingScores.Add(new SubGradingScore
+            {
+                StudentId = studentId,
+                SubcomponentId = SubGradingItem.SubcomponentId,
+                SubGradingItemId = SubGradingItem.Id,
+                GradingPeriod = SubGradingItem.GradingPeriod,
+                ScoreObtained = score,
+                DateRecorded = DateTime.Now
+            });
+        }
     }
 
     private async Task ConfirmSaveAll()
@@ -191,29 +191,13 @@ else
         if (!confirmed || SubGradingItem == null)
             return;
 
-        var payload = new List<StudentSubScore>();
-
-        foreach (var entry in StudentScores)
-        {
-            var studentId = entry.Key;
-            var score = entry.Value;
-
-            payload.Add(new StudentSubScore
-            {
-                StudentId = studentId,
-                SubcomponentId = SubGradingItem.SubcomponentId,
-                GradingPeriod = SubGradingItem.GradingPeriod,
-                ScoreObtained = score,
-                DateRecorded = DateTime.Now
-            });
-        }
-
         try
         {
-            var response = await Http.PostAsJsonAsync("api/StudentSubScore/Bulk", payload);
+            var response = await Http.PostAsJsonAsync("api/SubGradingScore/Bulk", SubGradingScores);
             if (response.IsSuccessStatusCode)
             {
                 await JS.InvokeVoidAsync("alert", "Scores saved successfully!");
+                NavigationManager.NavigateTo($"/subject/template/{SubGradingItem.SubjectId}");
             }
             else
             {
@@ -226,6 +210,5 @@ else
             await JS.InvokeVoidAsync("alert", $"Error saving scores: {ex.Message}");
         }
     }
-
 
 }

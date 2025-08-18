@@ -1,10 +1,8 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">SchoolApp</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
+﻿>
+<div class="container-fluid d-flex justify-content-center">
+    <a class="navbar-brand mx-auto" href="">
+        <img src="sample_logo.png" alt="School Logo" width="130" height="130" class="d-inline-block align-top" />
+    </a>
 </div>
 
 <div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
@@ -76,15 +74,12 @@
     private void ToggleSubjectDropdown()
     {
         ShowSubjectDropdown = !ShowSubjectDropdown;
-        // Optionally close other dropdowns when one opens
         ShowStudentDropdown = false;
     }
 
-    // New method for student dropdown
     private void ToggleStudentDropdown()
     {
         ShowStudentDropdown = !ShowStudentDropdown;
-        // Optionally close other dropdowns when one opens
         ShowSubjectDropdown = false;
     }
 }
