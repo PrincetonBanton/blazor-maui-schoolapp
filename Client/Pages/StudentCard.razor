@@ -3,6 +3,7 @@
 
 @inject HttpClient Http
 @inject IJSRuntime JS
+@using System.Text.Json
 @inject NavigationManager NavigationManager
 @using SchoolApp.Shared.Models
 
@@ -64,10 +65,10 @@ else
             <tbody>
                 @foreach (var subject in Subjects)
                 {
-                    var first = GetSubjectGrade(subject.Id, 1);
-                    var second = GetSubjectGrade(subject.Id, 2);
-                    var third = GetSubjectGrade(subject.Id, 3);
-                    var fourth = GetSubjectGrade(subject.Id, 4);
+                    var first = GetStudentScore(subject.Id, Student.Id, 1);
+                    var second = GetStudentScore(subject.Id, Student.Id, 2);
+                    var third = GetStudentScore(subject.Id, Student.Id, 3);
+                    var fourth = GetStudentScore(subject.Id, Student.Id, 4);
 
                     var finalGrade = (first + second + third + fourth) / 4;
                     var remarks = finalGrade >= 75 ? "Passed" : "Failed";
@@ -83,6 +84,7 @@ else
                         <td class="text-center @remarksClass">@remarks</td>
                     </tr>
                 }
+
             </tbody>
 
         </table>
@@ -118,7 +120,8 @@ else
                 Student = await Http.GetFromJsonAsync<Student>($"api/student/{StudentId}");
                 Subjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject");
                 SubGradingItems = await Http.GetFromJsonAsync<List<SubGradingItem>>("api/SubGradingItem");
-                SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>("api/SubGradingScore/by-student/" + StudentId);
+                SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>($"api/SubGradingScore/ByStudent/{StudentId}"); 
+
             }
             catch (Exception ex)
             {
@@ -127,34 +130,22 @@ else
         }
     }
 
-    private double GetSubjectGrade(Guid subjectId, int gradingPeriod)
+    private double GetStudentScore(Guid subjectId, Guid studentId, int gradingPeriod)
     {
-        var subject = Subjects.FirstOrDefault(s => s.Id == subjectId);
-        if (subject == null) return 0;
+        var itemsForSubject = SubGradingItems
+            .Where(i => i.SubjectId == subjectId && i.GradingPeriod == gradingPeriod) // Added filter
+            .Select(i => i.Id)
+            .ToList();
 
-        double total = 0;
+        var json = JsonSerializer.Serialize(itemsForSubject, new JsonSerializerOptions { WriteIndented = true });
+        JS.InvokeVoidAsync("alert", "items for the subject " + json);
 
-        foreach (var comp in subject.Components)
-        {
-            foreach (var sub in comp.Subcomponents)
-            {
-                var scores = SubGradingScores.Where(sc =>
-                    sc.SubcomponentId == sub.Id &&
-                    sc.GradingPeriod == gradingPeriod);
-
-                foreach (var sc in scores)
-                {
-                    var item = SubGradingItems.FirstOrDefault(i => i.Id == sc.SubGradingItemId);
-                    if (item == null || item.ItemCount == 0) continue;
-
-                    var percentToItems = (sc.ScoreObtained / (double)item.ItemCount) * 100;
-                    var percentToSubject = percentToItems * (sub.Percentage * comp.Percentage) / 10000;
-                    total += percentToSubject;
-                }
-            }
-        }
-
-        return Math.Round(total, 2);
+        var scores = SubGradingScores
+            .Where(s => itemsForSubject.Contains(s.SubGradingItemId) &&
+                        s.StudentId == studentId &&
+                        s.GradingPeriod == gradingPeriod)
+            .Select(s => s.PercentSubject);
+        return scores.Any() ? scores.Sum() : 0;
     }
 
      private void OnStudentSelected(ChangeEventArgs e)

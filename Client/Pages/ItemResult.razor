@@ -164,11 +164,17 @@ else
     }
 
     private void SetOrUpdateStudentScore(Guid studentId, int score)
-    {
+        {
         var existing = SubGradingScores.FirstOrDefault(s => s.StudentId == studentId);
+        var itemCount = SubGradingItem?.ItemCount ?? 0;
+
+        var percentToItems = itemCount > 0 ? (double)score / itemCount * 100 : 0;
+        var percentToSubject = percentToItems * ((Subcomponent?.Percentage ?? 0) * (Component?.Percentage ?? 0)) / 10000;
+
         if (existing != null)
         {
             existing.ScoreObtained = score;
+            existing.PercentSubject = percentToSubject; // update percent
             existing.DateRecorded = DateTime.Now;
         }
         else if (SubGradingItem != null)
@@ -180,6 +186,7 @@ else
                 SubGradingItemId = SubGradingItem.Id,
                 GradingPeriod = SubGradingItem.GradingPeriod,
                 ScoreObtained = score,
+                PercentSubject = percentToSubject, 
                 DateRecorded = DateTime.Now
             });
         }
