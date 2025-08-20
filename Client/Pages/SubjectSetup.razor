@@ -1,4 +1,6 @@
 ﻿@page "/subject/setup"
+@page "/subject/setup/{SubjectId:guid}"
+
 @inject HttpClient Http
 @inject IJSRuntime JS
 @using System.Text.Json
@@ -197,6 +199,9 @@ else
 }
 
 @code {
+    [Parameter]
+    public Guid? SubjectId { get; set; }
+
     private Guid? SelectedSubjectId;
     private Guid? SelectedComponentIdForSub = null;
     private List<Subject> Subjects = new();
@@ -227,6 +232,12 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadSubjects();
+        if (SubjectId != null && SubjectId != Guid.Empty)
+        {
+            SelectedSubjectId = SubjectId;
+            var subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
+            await LoadComponents(); // Load components for this subject
+        }
     }
 
     private async Task LoadSubjects()

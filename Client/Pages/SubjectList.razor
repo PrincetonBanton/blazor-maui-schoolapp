@@ -52,14 +52,18 @@ else
                         @if (subject.IsValidated)
                         {
                             <NavLink class="btn btn-primary btn-sm" style="width:140px; height:30px;" href="@($"/subject/template/{subject.Id}")">
-                                Open Template
+                                Subject Template
                             </NavLink>
                         }
                         else
                         {
-                            <NavLink class="btn btn-warning btn-sm" style="width:140px; height:30px;" href="subject/setup">
+@*                             <NavLink class="btn btn-warning btn-sm" style="width:140px; height:30px;" href="subject/setup">
                                 Setup Subject
+                            </NavLink> *@
+                            <NavLink class="btn btn-warning btn-sm" style="width:140px; height:30px;" href="@($"/subject/setup/{subject.Id}")">
+                                Subject Setup
                             </NavLink>
+
                         }
                     </td>
                 </tr>

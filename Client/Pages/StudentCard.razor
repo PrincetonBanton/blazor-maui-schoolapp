@@ -137,8 +137,8 @@ else
             .Select(i => i.Id)
             .ToList();
 
-        var json = JsonSerializer.Serialize(itemsForSubject, new JsonSerializerOptions { WriteIndented = true });
-        JS.InvokeVoidAsync("alert", "items for the subject " + json);
+        // var json = JsonSerializer.Serialize(itemsForSubject, new JsonSerializerOptions { WriteIndented = true });
+        // JS.InvokeVoidAsync("alert", "items for the subject " + json);
 
         var scores = SubGradingScores
             .Where(s => itemsForSubject.Contains(s.SubGradingItemId) &&
