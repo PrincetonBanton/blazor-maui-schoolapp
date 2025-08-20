@@ -32,11 +32,19 @@
 }
 else
 {
-    <div class="card shadow-sm mb-4" style="width: 50%;">
-        <div class="card-body">
-            <h5 class="card-title">Student Report Card</h5>
-            <p><strong>ID:</strong> @Student.Id</p>
-            <p><strong>Name:</strong> @Student.FullName</p>
+    <div class="card-body d-flex align-items-start">
+        <img src="id_pic.png"
+                alt="Student Photo"
+                class="rounded border me-3"
+                style="width: 150px; height: 150px; object-fit: cover;" />
+
+        <div>
+            <h4 class="mb-1"><strong>@Student.FullName</strong></h4>
+            <p class="mb-1">Birthdate: @Student.DateOfBirth</p>
+            <p class="mb-1">Gender: @Student.Gender</p>
+            <p class="mb-1">Address: @Student.Address</p>
+            <p class="mb-1">Guardian: Parents Name</p>
+            <p class="mb-1">Contact#: @Student.ContactNumber</p>
         </div>
     </div>
 
