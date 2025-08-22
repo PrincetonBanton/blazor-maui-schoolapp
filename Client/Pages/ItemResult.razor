@@ -119,8 +119,21 @@ else
             SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>(
                 $"api/SubGradingScore/ByItem/{SubGradingItem.Id}"
             ) ?? new List<SubGradingScore>();
-            // var json = JsonSerializer.Serialize(SubGradingScores, new JsonSerializerOptions { WriteIndented = true });
-            // JS.InvokeVoidAsync("alert", json);
+
+            foreach (var student in Students)
+            {
+                var existing = SubGradingScores.FirstOrDefault(s => s.StudentId == student.Id);
+                if (existing != null)
+                {
+                    await JS.InvokeVoidAsync("alert", 
+                        $"{student.FirstName} {student.LastName} already has a previous score: {existing.ScoreObtained}");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", 
+                        $"{student.FirstName} {student.LastName} has no previous score recorded yet.");
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -142,6 +155,7 @@ else
 
     private async void OnScoreChanged(Guid studentId, string? score)
     {
+
         if (!int.TryParse(score, out int parsedScore))
         {
             SetOrUpdateStudentScore(studentId, 0);
@@ -162,6 +176,7 @@ else
 
         StateHasChanged();
     }
+
 
     private void SetOrUpdateStudentScore(Guid studentId, int score)
         {
@@ -192,18 +207,52 @@ else
         }
     }
 
+    // private async Task ConfirmSaveAll()
+    // {
+    //     bool confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to save all scores?");
+    //     if (!confirmed || SubGradingItem == null)
+    //         return;
+
+    //     try
+    //     {
+    //         var response = await Http.PostAsJsonAsync("api/SubGradingScore/Bulk", SubGradingScores);
+    //         if (response.IsSuccessStatusCode)
+    //         {
+    //             await JS.InvokeVoidAsync("alert", "Scores saved successfully!");
+    //             NavigationManager.NavigateTo($"/subject/template/{SubGradingItem.SubjectId}");
+    //         }
+    //         else
+    //         {
+    //             var error = await response.Content.ReadAsStringAsync();
+    //             await JS.InvokeVoidAsync("alert", $"Failed to save scores: {error}");
+    //         }
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         await JS.InvokeVoidAsync("alert", $"Error saving scores: {ex.Message}");
+    //     }
+    // }
     private async Task ConfirmSaveAll()
-    {
+        {
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to save all scores?");
         if (!confirmed || SubGradingItem == null)
             return;
 
         try
         {
-            var response = await Http.PostAsJsonAsync("api/SubGradingScore/Bulk", SubGradingScores);
+            // Prepare payload: delete all then add all
+            var payload = new
+            {
+                SubGradingItemId = SubGradingItem.Id,
+                Scores = SubGradingScores
+            };
+
+            // Send to API (endpoint must handle delete+insert transactionally)
+            var response = await Http.PostAsJsonAsync("api/SubGradingScore/DeleteAndInsertAll", payload);
+
             if (response.IsSuccessStatusCode)
             {
-                await JS.InvokeVoidAsync("alert", "Scores saved successfully!");
+                await JS.InvokeVoidAsync("alert", "Scores replaced successfully!");
                 NavigationManager.NavigateTo($"/subject/template/{SubGradingItem.SubjectId}");
             }
             else

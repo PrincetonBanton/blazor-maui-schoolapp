@@ -123,4 +123,46 @@ public class SubGradingScoreController : ControllerBase
 
         return Ok(scores.Count);
     }
+
+    // POST: api/SubGradingScore/DeleteAndInsertAll
+    [HttpPost("DeleteAndInsertAll")]
+    public async Task<IActionResult> DeleteAndInsertAll([FromBody] DeleteAndInsertScoresRequest request)
+    {
+        if (request == null || request.Scores == null)
+            return BadRequest("Invalid request.");
+
+        // Wrap in a transaction for safety
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            // Delete all scores for this SubGradingItem
+            var oldScores = _context.SubGradingScores
+                .Where(s => s.SubGradingItemId == request.SubGradingItemId);
+
+            _context.SubGradingScores.RemoveRange(oldScores);
+            await _context.SaveChangesAsync();
+
+            // Insert the new scores
+            if (request.Scores.Any())
+            {
+                _context.SubGradingScores.AddRange(request.Scores);
+                await _context.SaveChangesAsync();
+            }
+
+            await transaction.CommitAsync();
+            return Ok(new { Inserted = request.Scores.Count });
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync();
+            return BadRequest($"Error during replace: {ex.Message}");
+        }
+    }
+
+    public class DeleteAndInsertScoresRequest
+    {
+        public Guid SubGradingItemId { get; set; }
+        public List<SubGradingScore> Scores { get; set; } = new();
+    }
+
 }
