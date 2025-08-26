@@ -98,7 +98,7 @@ public class SubGradingScoreController : ControllerBase
     {
         var score = await _context.SubGradingScores.FindAsync(id);
         if (score == null)
-            return NotFound();
+            return NotFound(); 
 
         _context.SubGradingScores.Remove(score);
         await _context.SaveChangesAsync();
