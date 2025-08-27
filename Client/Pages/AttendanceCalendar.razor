@@ -1,0 +1,142 @@
+﻿@page "/attendance/calendar"
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@using SchoolApp.Shared.Models
+
+<div class="mb-3">
+    <select id="monthSelect" class="form-select w-25 d-inline-block" @bind="SelectedMonth">
+        @for (int m = 1; m <= 12; m++)
+        {
+            <option value="@m">@((new DateTime(DateTime.Now.Year, m, 1)).ToString("MMMM"))</option>
+        }
+    </select>
+</div>
+
+<!-- Calendar -->
+<div>
+    @if (DaysInMonth.Any())
+    {
+        <div class="calendar-grid">
+            <!-- Week headers -->
+            <div class="calendar-header">Sun</div>
+            <div class="calendar-header">Mon</div>
+            <div class="calendar-header">Tue</div>
+            <div class="calendar-header">Wed</div>
+            <div class="calendar-header">Thu</div>
+            <div class="calendar-header">Fri</div>
+            <div class="calendar-header">Sat</div>
+
+            <!-- Empty slots before first day -->
+            @for (int i = 0; i < StartOffset; i++)
+            {
+                <div class="calendar-day empty"></div>
+            }
+
+            <!-- Actual days -->
+            @foreach (var day in DaysInMonth)
+            {
+                <div class="calendar-day @(day.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "")"
+                     @onclick="() => OnDayClicked(day)">
+                    <p class="calendar-day-number">@day.Day</p>
+                </div>
+            }
+
+            <!-- Empty slots after last day -->
+            @for (int i = 0; i < EndOffset; i++)
+            {
+                <div class="calendar-day empty"></div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr); /* 7 days in a week */
+        width: 100%;
+        border: 1px solid #ccc;
+    }
+
+    .calendar-header {
+        font-weight: bold;
+        text-align: center;
+        padding: 5px;
+        border: 1px solid #ccc;
+        background-color: #f8f8f8;
+    }
+
+    .calendar-day {
+        border: 1px solid #ccc;
+        text-align: center;
+        padding: 10px;
+        min-height: 100px;
+        cursor: pointer;
+    }
+
+        .calendar-day:hover {
+            background-color: #f0f0f0;
+        }
+
+        .calendar-day.empty {
+            background-color: #fafafa;
+            border: 1px solid #ccc;
+            cursor: default;
+        }
+
+        .calendar-day.sunday {
+            color: red;
+            font-weight: bold;
+        }
+
+    .calendar-day-number {
+        font-size: 18px;
+        font-weight: bold;
+    }
+</style>
+
+@code {
+    private int _selectedMonth = DateTime.Now.Month;
+    private int SelectedMonth
+    {
+        get => _selectedMonth;
+        set
+        {
+            if (_selectedMonth != value)
+            {
+                _selectedMonth = value;
+                LoadCalendar();
+            }
+        }
+    }
+
+    private List<DateTime> DaysInMonth { get; set; } = new();
+    private int StartOffset { get; set; } = 0;
+    private int EndOffset { get; set; } = 0;
+
+    protected override void OnInitialized()
+    {
+        LoadCalendar();
+    }
+
+    private void LoadCalendar()
+    {
+        DaysInMonth = Enumerable.Range(1, DateTime.DaysInMonth(DateTime.Now.Year, SelectedMonth))
+            .Select(day => new DateTime(DateTime.Now.Year, SelectedMonth, day))
+            .ToList();
+
+        // Offset before first day
+        var firstDay = DaysInMonth.First();
+        StartOffset = (int)firstDay.DayOfWeek; // Sunday = 0
+
+        // Offset after last day
+        var lastDay = DaysInMonth.Last();
+        EndOffset = 6 - (int)lastDay.DayOfWeek; // Fill up to Saturday
+    }
+
+    private void OnDayClicked(DateTime day)
+    {
+        NavigationManager.NavigateTo($"/attendance/day/{day:ddMMyyyy}");
+    }
+}
