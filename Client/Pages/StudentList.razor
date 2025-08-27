@@ -121,6 +121,9 @@
 
     private async Task SaveStudentAsync()
     {
+        var json = JsonSerializer.Serialize(NewStudent, new JsonSerializerOptions { WriteIndented = true });
+        JS.InvokeVoidAsync("alert", json);
+
         var response = await Http.PostAsJsonAsync("api/student", NewStudent);
         if (response.IsSuccessStatusCode)
         {
