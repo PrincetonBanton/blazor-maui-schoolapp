@@ -19,13 +19,13 @@
     {
         <div class="calendar-grid">
             <!-- Week headers -->
-            <div class="calendar-header">Sun</div>
-            <div class="calendar-header">Mon</div>
-            <div class="calendar-header">Tue</div>
-            <div class="calendar-header">Wed</div>
-            <div class="calendar-header">Thu</div>
-            <div class="calendar-header">Fri</div>
-            <div class="calendar-header">Sat</div>
+            <div class="calendar-header">SUN</div>
+            <div class="calendar-header">MON</div>
+            <div class="calendar-header">TUE</div>
+            <div class="calendar-header">WED</div>
+            <div class="calendar-header">THU</div>
+            <div class="calendar-header">FRI</div>
+            <div class="calendar-header">SAT</div>
 
             <!-- Empty slots before first day -->
             @for (int i = 0; i < StartOffset; i++)
@@ -36,7 +36,7 @@
             <!-- Actual days -->
             @foreach (var day in DaysInMonth)
             {
-                <div class="calendar-day @(day.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "")"
+                <div class="calendar-day @(day.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "") @(day.Date == DateTime.Today.Date ? "today" : "")"
                      @onclick="() => OnDayClicked(day)">
                     <p class="calendar-day-number">@day.Day</p>
                 </div>
@@ -60,14 +60,16 @@
     }
 
     .calendar-header {
+        color: white;   
         font-weight: bold;
         text-align: center;
         padding: 5px;
         border: 1px solid #ccc;
-        background-color: #f8f8f8;
+        background-color: royalblue;
     }
 
     .calendar-day {
+        color: darkblue;
         border: 1px solid #ccc;
         text-align: center;
         padding: 10px;
@@ -91,9 +93,14 @@
         }
 
     .calendar-day-number {
-        font-size: 18px;
+        font-size: 1.5rem;
         font-weight: bold;
     }
+
+    .calendar-day.today {
+        background-color: yellow; 
+    }
+
 </style>
 
 @code {

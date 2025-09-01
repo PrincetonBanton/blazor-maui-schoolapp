@@ -4,19 +4,33 @@
 @inject NavigationManager NavigationManager
 @using SchoolApp.Shared.Models
 
-<h3>Attendance Day</h3>
-<p>Selected Date: @SelectedDate.ToString("MMMM dd, yyyy")</p>
-
 @if (Students.Count == 0)
 {
     <p><em>Loading students...</em></p>
 }
 else
 {
+    <div class="card m-0" style="width:200px;">
+        <div class="card-body text-center p-0">
+            <h5 class="card-subtitle text-white border-bottom m-0 py-2" style="background-color:royalblue">
+                @SelectedDate.ToString("MMMM yyyy")
+            </h5>
+            <h1 class="display-4 m-0"
+                style="font-size:3rem; font-weight:bold; color:@(SelectedDate.DayOfWeek == DayOfWeek.Sunday ? "red" : "royalblue");">
+                @SelectedDate.Day
+            </h1>
+            <h4 class="card-title py-2 m-0"
+                style="color:@(SelectedDate.DayOfWeek == DayOfWeek.Sunday ? "red" : "black")">
+                @SelectedDate.ToString("dddd")
+            </h4>
+
+        </div>
+    </div>
+
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Student Name</th>
+                <th>Name</th>
                 <th class="text-center">Present</th>
                 <th class="text-center">Absent</th>
             </tr>
@@ -27,31 +41,40 @@ else
                 var isPresent = AttendanceMap.TryGetValue(student.Id, out var p) ? p : true;
                 <tr>
                     <td>
-                        @(
-                                        string.IsNullOrWhiteSpace(student.FullName)
-                                        ? $"{student.FirstName} {student.LastName}".Trim()
-                                        : student.FullName
-                                        )
-                </td>
-                <td class="text-center">
-                    <input type="radio"
-                           name="att-@student.Id"
-                           checked="@isPresent"
-                           @onchange="@(() => SetAttendance(student.Id, true))" />
-                </td>
-                <td class="text-center">
-                    <input type="radio"
-                           name="att-@student.Id"
-                           checked="@(!isPresent)"
-                           @onchange="@(() => SetAttendance(student.Id, false))" />
-                </td>
-            </tr>
-                }
+                        @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())
+                    </td>
+                    <td class="text-center">
+                        <input type="radio" name="att-@student.Id" checked="@isPresent"
+                            @onchange="@(() => SetAttendance(student.Id, true))" />
+                    </td>
+                    <td class="text-center">
+                        <input type="radio" name="att-@student.Id" checked="@(!isPresent)"
+                            @onchange="@(() => SetAttendance(student.Id, false))" />
+                    </td>
+                </tr>
+            }
         </tbody>
     </table>
 
     <button class="btn btn-primary" @onclick="SaveAttendanceAsync">Save Attendance</button>
 }
+
+<style>
+    .calendar-day-card {
+        max-width: 200px;
+        margin: 0 auto;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+        .calendar-day-card .display-4 {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+</style>
 
 @code {
     [Parameter] public string dateString { get; set; } = string.Empty;
@@ -117,7 +140,6 @@ else
 
         // TODO: POST to your attendance endpoint, e.g.:
         // var resp = await Http.PostAsJsonAsync("api/attendance/bulk", payload);
-
         await JS.InvokeVoidAsync("alert", $"Prepared {payload.Count} attendance records for {SelectedDate:MMMM dd, yyyy}.");
     }
 }

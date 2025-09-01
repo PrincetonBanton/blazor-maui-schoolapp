@@ -20,7 +20,11 @@ public class StudentController : ControllerBase
     [HttpGet]
     public ActionResult<IEnumerable<Student>> GetStudents()
     {
-        return Ok(_context.Students.ToList());
+        var students = _context.Students
+        .OrderBy(s => s.LastName) // Sort by LastName
+        .ThenBy(s => s.FirstName) // Optional: secondary sort by FirstName
+        .ToList();
+        return Ok(students);
     }
 
     // GET: api/Student/{id}
@@ -43,13 +47,13 @@ public class StudentController : ControllerBase
         return Ok(student);
     }
 
-    [HttpPost]
-    public async Task<ActionResult<Student>> PostStudent(Student student)
-    {
-        _context.Students.Add(student);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetStudent), new { id = student.Id }, student);
-    }
+    //[HttpPost]
+    //public async Task<ActionResult<Student>> PostStudent(Student student)
+    //{
+    //    _context.Students.Add(student);
+    //    await _context.SaveChangesAsync();
+    //    return CreatedAtAction(nameof(GetStudent), new { id = student.Id }, student);
+    //}
 
     // PUT: api/Student/{id}
     [HttpPut("{id}")]

@@ -1,5 +1,17 @@
 ﻿@page "/"
 
-Dashboard
+@inject IJSRuntime JS
 
+<h3>Dashboard</h3>
 
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // For now we directly show alert,
+            // later you can conditionally check if SchoolYear/Section exists
+            await JS.InvokeVoidAsync("alert", "Setup SchoolYear and Section");
+        }
+    }
+}

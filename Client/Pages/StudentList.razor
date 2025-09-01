@@ -4,53 +4,47 @@
 @using System.Text.Json
 @using SchoolApp.Shared.Models
 
-<button class="btn btn-primary mb-2" style="width: 200px;" @onclick="ShowStudentModal">Student +</button>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Full Name</th>
-            <th>Date of Birth</th>
-            <th>Gender</th>
-            <th>Address</th>
-            <th>Contact</th>
-            <th>Actions</th>
-            <th>Report Card</th> 
-        </tr>
-    </thead>
-    <tbody>
-        @if (Students.Count == 0)
-        {
-            <tr>
-                <td colspan="7" class="text-center text-muted">No student data to display yet.</td>
-            </tr>
-        }
-        else
-        {
-            var index = 1;
-            foreach (var student in Students)
+@if (Students.Count == 0)
+{
+    <LoadingSpinner />
+}
+else
+{
+    <button class="btn btn-primary mb-2" style="width: 200px; margin-bottom: 1rem;" @onclick="ShowStudentModal">Student +</button>
+    <table class="table table-striped">
+        <tbody>
+            @if (Students.Count == 0)
             {
                 <tr>
-                    <td>@index</td> <!-- Display the row number -->
-                    <td>@student.FullName</td>
-                    <td>@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
-                    <td>@student.Gender</td>
-                    <td>@student.Address</td>
-                    <td>@student.ContactNumber</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning me-1" disabled>Edit</button>
-                        <button class="btn btn-sm btn-danger" disabled>Delete</button>
-                    </td>
-                    <td>
-                        <a class="btn btn-sm btn-info" href="@($"/students/card/{student.Id}")">View Card</a>
-                    </td>
+                    <td colspan="7" class="text-center text-muted">No student data to display yet.</td>
                 </tr>
-                index++;
             }
-        }
-    </tbody>
-</table>
-
+            else
+            {
+                var index = 1;
+                foreach (var student in Students)
+                {
+                    <tr>
+                        <td>@index</td>
+                        <td>@($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())</td>
+                        <td>@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                        <td>@student.Gender</td>
+                        <td>@student.Address</td>
+                        <td>@student.ContactNumber</td>
+                        <td>
+                            <div class="d-flex gap-3">
+                                <button class="btn btn-sm btn-warning" style="width:80px;" disabled>Edit</button>
+                                <button class="btn btn-sm btn-danger" style="width:80px;" disabled>Delete</button>
+                                <a class="btn btn-sm btn-primary" style="width:150px;" href="@($"/students/card/{student.Id}")">View Card</a>
+                            </div>
+                        </td>
+                    </tr>
+                    index++;
+                }
+            }
+        </tbody>
+    </table>
+}
 
 @if (ShowModal)
 {

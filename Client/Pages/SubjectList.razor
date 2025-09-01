@@ -4,15 +4,9 @@
 @using System.Text.Json
 @using SchoolApp.Shared.Models
 
-<div class="d-flex align-items-center" style="margin-bottom: 1rem;">
-    <input type="text" class="form-control me-2" placeholder="New Subject Name"
-           style="width: 300px;" @bind="NewSubjectName" />
-    <button class="btn btn-primary" style="width: 200px;" @onclick="AddSubject">Subject +</button>
-</div>
-
 @if (subjects == null)
 {
-    <p><em>Loading...</em></p>
+    <LoadingSpinner />
 }
 else if (!subjects.Any())
 {
@@ -20,15 +14,12 @@ else if (!subjects.Any())
 }
 else
 {
+    <div class="d-flex align-items-center" style="margin-bottom: 1rem;">
+        <input type="text" class="form-control me-2" placeholder="New Subject Name"
+               style="width: 300px;" @bind="NewSubjectName" />
+        <button class="btn btn-primary" style="width: 200px;" @onclick="AddSubject">Subject +</button>
+    </div>
     <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Subject Name</th>
-                <th>Validation Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
         <tbody>
             @{
                 var index = 1;
@@ -57,9 +48,6 @@ else
                         }
                         else
                         {
-@*                             <NavLink class="btn btn-warning btn-sm" style="width:140px; height:30px;" href="subject/setup">
-                                Setup Subject
-                            </NavLink> *@
                             <NavLink class="btn btn-warning btn-sm" style="width:140px; height:30px;" href="@($"/subject/setup/{subject.Id}")">
                                 Subject Setup
                             </NavLink>
