@@ -1,4 +1,4 @@
-﻿>
+﻿
 <div class="container-fluid d-flex justify-content-center">
     <a class="navbar-brand mx-auto" href="">
         <img src="sample_logo.png" alt="School Logo" width="130" height="130" class="d-inline-block align-top" />
@@ -14,9 +14,6 @@
             <NavLink class="nav-link" href="subject/list">
                 <span class="oi oi-list-rich" aria-hidden="true"></span> Subjects
             </NavLink>
-        @*  <NavLink class="nav-link" href="subject/template">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Template
-            </NavLink> *@
             <NavLink class="nav-link" href="/students/list">
                 <span class="oi oi-list-rich" aria-hidden="true"></span> Students
             </NavLink>
@@ -40,9 +37,9 @@
                         <span class="oi oi-list-rich" aria-hidden="true"></span> Template
                     </NavLink>
                 </div>
-            } *@
+            }
 
-        @*  <div class="nav-link dropdown-toggle" role="button" @onclick="ToggleStudentDropdown">
+         <div class="nav-link dropdown-toggle" role="button" @onclick="ToggleStudentDropdown">
                 <span class="oi oi-person" aria-hidden="true"></span> Student
             </div>
             @if (ShowStudentDropdown)

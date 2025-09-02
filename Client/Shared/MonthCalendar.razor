@@ -1,0 +1,96 @@
+﻿@using Microsoft.AspNetCore.Components
+
+<div>
+    @if (DaysInMonth.Any())
+    {
+        <div class="calendar-grid" style="margin-top: 10px">
+            <div class="calendar-header">SUN</div>
+            <div class="calendar-header">MON</div>
+            <div class="calendar-header">TUE</div>
+            <div class="calendar-header">WED</div>
+            <div class="calendar-header">THU</div>
+            <div class="calendar-header">FRI</div>
+            <div class="calendar-header">SAT</div>
+
+            <!-- Empty slots before first day -->
+            @for (int i = 0; i < StartOffset; i++)
+            {
+                <div class="calendar-day empty"></div>
+            }
+
+            <!-- Actual days -->
+            @foreach (var day in DaysInMonth)
+            {
+                <div class="calendar-day @(day.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "") @(day.Date == DateTime.Today.Date ? "today" : "")"
+                     @onclick="() => OnDayClicked.InvokeAsync(day)">
+                    <p class="calendar-day-number">@day.Day</p>
+                </div>
+            }
+
+            <!-- Empty slots after last day -->
+            @for (int i = 0; i < EndOffset; i++)
+            {
+                <div class="calendar-day empty"></div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .calendar-grid {
+        margin-bottom: 20px;
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        width: 100%;
+        border: 1px solid #ccc;
+    }
+
+    .calendar-header {
+        color: white;
+        font-weight: bold;
+        text-align: center;
+        padding: 5px;
+        border: 1px solid #ccc;
+        background-color: royalblue;
+    }
+
+    .calendar-day {
+        color: darkblue;
+        border: 1px solid #ccc;
+        text-align: center;
+        padding: 10px;
+        min-height: 100px;
+        cursor: pointer;
+    }
+
+        .calendar-day:hover {
+            background-color: #f0f0f0;
+        }
+
+        .calendar-day.empty {
+            background-color: #fafafa;
+            border: 1px solid #ccc;
+            cursor: default;
+        }
+
+        .calendar-day.sunday {
+            color: red;
+            font-weight: bold;
+        }
+
+    .calendar-day-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
+    .calendar-day.today {
+        background-color: yellow;
+    }
+</style>
+
+@code {
+    [Parameter] public List<DateTime> DaysInMonth { get; set; } = new();
+    [Parameter] public int StartOffset { get; set; }
+    [Parameter] public int EndOffset { get; set; }
+    [Parameter] public EventCallback<DateTime> OnDayClicked { get; set; }
+}

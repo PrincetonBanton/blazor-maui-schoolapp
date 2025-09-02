@@ -3,107 +3,177 @@
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @using SchoolApp.Shared.Models
+@using SchoolApp.Client.Shared
 
-<div class="mb-3">
-    <select id="monthSelect" class="form-select w-25 d-inline-block" @bind="SelectedMonth">
+<div class="mb-3 d-flex align-items-center">
+    <select id="monthSelect" class="form-select w-25 d-inline-block me-2" @bind="SelectedMonth">
         @for (int m = 1; m <= 12; m++)
         {
             <option value="@m">@((new DateTime(DateTime.Now.Year, m, 1)).ToString("MMMM"))</option>
         }
     </select>
+    <button class="btn btn-primary" @onclick="ToggleMonthCalendar">
+        @(ShowMonthCalendar ? "Hide Calendar" : "Show Calendar")
+    </button>
 </div>
 
-<!-- Calendar -->
-<div>
-    @if (DaysInMonth.Any())
+@if (ShowMonthCalendar)
+{
+    <MonthCalendar DaysInMonth="DaysInMonth"
+                   StartOffset="StartOffset"
+                   EndOffset="EndOffset"
+                   OnDayClicked="OnDayClicked" />
+}
+
+<!-- Year Calendar (4x3) -->
+<div class="year-calendar">
+    @for (int m = 1; m <= 12; m++)
     {
-        <div class="calendar-grid">
-            <!-- Week headers -->
-            <div class="calendar-header">SUN</div>
-            <div class="calendar-header">MON</div>
-            <div class="calendar-header">TUE</div>
-            <div class="calendar-header">WED</div>
-            <div class="calendar-header">THU</div>
-            <div class="calendar-header">FRI</div>
-            <div class="calendar-header">SAT</div>
+        var daysInMonth = Enumerable.Range(1, DateTime.DaysInMonth(DateTime.Now.Year, m))
+        .Select(day => new DateTime(DateTime.Now.Year, m, day))
+        .ToList();
 
-            <!-- Empty slots before first day -->
-            @for (int i = 0; i < StartOffset; i++)
-            {
-                <div class="calendar-day empty"></div>
-            }
+        var firstDay = daysInMonth.First();
+        var startOffset = (int)firstDay.DayOfWeek;
+        var lastDay = daysInMonth.Last();
+        var endOffset = 6 - (int)lastDay.DayOfWeek;
 
-            <!-- Actual days -->
-            @foreach (var day in DaysInMonth)
-            {
-                <div class="calendar-day @(day.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "") @(day.Date == DateTime.Today.Date ? "today" : "")"
-                     @onclick="() => OnDayClicked(day)">
-                    <p class="calendar-day-number">@day.Day</p>
-                </div>
-            }
+        <div class="year-month @(m == SelectedMonth ? "selected" : "")">
+            <div class="month-title">
+                @(new DateTime(DateTime.Now.Year, m, 1).ToString("MMMM"))
+            </div>
 
-            <!-- Empty slots after last day -->
-            @for (int i = 0; i < EndOffset; i++)
-            {
-                <div class="calendar-day empty"></div>
-            }
+            <div class="mini-calendar">
+                <!-- Week headers -->
+                <div class="mini-header">S</div>
+                <div class="mini-header">M</div>
+                <div class="mini-header">T</div>
+                <div class="mini-header">W</div>
+                <div class="mini-header">T</div>
+                <div class="mini-header">F</div>
+                <div class="mini-header">S</div>
+
+                <!-- Empty slots before first day -->
+                @for (int i = 0; i < startOffset; i++)
+                {
+                    <div class="mini-day empty"></div>
+                }
+
+                <!-- Actual days -->
+                @foreach (var day in daysInMonth)
+                {
+                    <div class="mini-day @(day.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "")
+                                 @(day.Date == DateTime.Today.Date ? "today" : "")
+                                 @(SelectedDay.HasValue && day.Date == SelectedDay.Value.Date ? "selected" : "")"
+                         @onclick="() => OnMiniDayClicked(day)">
+                        @day.Day
+                    </div>
+                }
+
+
+                <!-- Empty slots after last day -->
+                @for (int i = 0; i < endOffset; i++)
+                {
+                    <div class="mini-day empty"></div>
+                }
+            </div>
         </div>
     }
 </div>
 
 <style>
-    .calendar-grid {
+    .year-calendar {
         display: grid;
-        grid-template-columns: repeat(7, 1fr); /* 7 days in a week */
-        width: 100%;
-        border: 1px solid #ccc;
+        grid-template-columns: repeat(4, 1fr); /* 4 months per row */
+        gap: 10px;
     }
 
-    .calendar-header {
-        color: white;   
-        font-weight: bold;
-        text-align: center;
-        padding: 5px;
-        border: 1px solid #ccc;
-        background-color: royalblue;
-    }
-
-    .calendar-day {
-        color: darkblue;
-        border: 1px solid #ccc;
-        text-align: center;
+    .year-month {
         padding: 10px;
-        min-height: 100px;
+        border: 1px solid #ccc;
+        text-align: center;
+        font-weight: bold;
+        background: #fff;
+        transition: background-color 0.2s;
+    }
+
+        .year-month:hover {
+            background-color: #e2e6ea;
+        }
+
+            .year-month:hover .mini-day {
+                background-color: #e2e6ea;
+            }
+
+        /* Selected default */
+        .year-month.selected {
+            background-color: royalblue;
+            color: white;
+            border-color: darkblue;
+        }
+
+            /* When selected month is hovered */
+            .year-month.selected:hover {
+                background-color: #e2e6ea;
+                color: black; /* reset text color so it doesn’t stay white */
+                border-color: #ccc; /* reset border to match normal hover */
+            }
+            .year-month.selected:hover .mini-day {
+                background-color: #e2e6ea;
+            }
+
+    .month-title {
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .mini-calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        font-size: 0.7rem;
+        text-align: center;
+    }
+
+    .mini-header {
+        font-weight: bold;
+        background: royalblue;
+        color: white;
+        padding: 2px;
+        border: 1px solid #ccc;
+    }
+
+    .mini-day {
+        border: 1px solid #ccc;
+        padding: 3px;
+        transition: background-color 0.2s;
         cursor: pointer;
     }
 
-        .calendar-day:hover {
-            background-color: #f0f0f0;
+        .mini-day:not(.empty):hover {
+            background-color: red !important;
         }
-
-        .calendar-day.empty {
-            background-color: #fafafa;
-            border: 1px solid #ccc;
-            cursor: default;
+        .mini-day.today {
+            background: yellow;
         }
-
-        .calendar-day.sunday {
+        .mini-day.sunday {
             color: red;
-            font-weight: bold;
         }
-
-    .calendar-day-number {
-        font-size: 1.5rem;
-        font-weight: bold;
-    }
-
-    .calendar-day.today {
-        background-color: yellow; 
-    }
-
 </style>
 
 @code {
+    private bool ShowMonthCalendar { get; set; } = false;
+    private void ToggleMonthCalendar()
+    {
+        ShowMonthCalendar = !ShowMonthCalendar;
+    }
+    private DateTime? SelectedDay { get; set; }
+    private void OnMiniDayClicked(DateTime day)
+    {
+        SelectedDay = day;
+        OnDayClicked(day); // still navigate if you want
+    }
+
     private int _selectedMonth = DateTime.Now.Month;
     private int SelectedMonth
     {
