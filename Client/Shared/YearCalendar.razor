@@ -1,0 +1,143 @@
+﻿@using Microsoft.AspNetCore.Components
+
+<div class="year-calendar">
+    @for (int m = 1; m <= 12; m++)
+    {
+        var daysInMonth = Enumerable.Range(1, DateTime.DaysInMonth(DateTime.Now.Year, m))
+        .Select(day => new DateTime(DateTime.Now.Year, m, day))
+        .ToList();
+
+        var firstDay = daysInMonth.First();
+        var startOffset = (int)firstDay.DayOfWeek;
+        var lastDay = daysInMonth.Last();
+        var endOffset = 6 - (int)lastDay.DayOfWeek;
+
+        <div class="year-month @(m == SelectedMonth ? "selected" : "")">
+            <div class="month-title">
+                @(new DateTime(DateTime.Now.Year, m, 1).ToString("MMMM"))
+            </div>
+
+            <div class="mini-calendar">
+                <!-- Week headers -->
+                <div class="mini-header">S</div>
+                <div class="mini-header">M</div>
+                <div class="mini-header">T</div>
+                <div class="mini-header">W</div>
+                <div class="mini-header">T</div>
+                <div class="mini-header">F</div>
+                <div class="mini-header">S</div>
+
+                <!-- Empty slots before first day -->
+                @for (int i = 0; i < startOffset; i++)
+                {
+                    <div class="mini-day empty"></div>
+                }
+
+                <!-- Actual days -->
+                @foreach (var day in daysInMonth)
+                {
+                    <div class="mini-day @(day.DayOfWeek == DayOfWeek.Sunday ? "sunday" : "")
+                                         @(day.Date == DateTime.Today.Date ? "today" : "")
+                                         @(SelectedDay.HasValue && day.Date == SelectedDay.Value.Date ? "selected" : "")"
+                         @onclick="() => OnMiniDayClicked(day)">
+                        @day.Day
+                    </div>
+                }
+
+                <!-- Empty slots after last day -->
+                @for (int i = 0; i < endOffset; i++)
+                {
+                    <div class="mini-day empty"></div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .year-calendar {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+
+    .year-month {
+        padding: 10px;
+        border: 1px solid #ccc;
+        text-align: center;
+        font-weight: bold;
+        background: #fff;
+        transition: background-color 0.2s;
+    }
+
+        .year-month:hover {
+            background-color: #e2e6ea;
+        }
+
+            .year-month:hover .mini-day:not(.empty) {
+                background-color: #e2e6ea;
+            }
+
+        .year-month.selected {
+            background-color: royalblue;
+            color: white;
+            border-color: darkblue;
+        }
+
+            .year-month.selected:hover {
+                background-color: #e2e6ea;
+                color: black;
+                border-color: #ccc;
+            }
+
+    .month-title {
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .mini-calendar {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        font-size: 0.7rem;
+        text-align: center;
+    }
+
+    .mini-header {
+        font-weight: bold;
+        background: royalblue;
+        color: white;
+        padding: 2px;
+        border: 1px solid #ccc;
+    }
+
+    .mini-day {
+        border: 1px solid #ccc;
+        padding: 3px;
+        transition: background-color 0.2s;
+        cursor: pointer;
+    }
+
+        .mini-day:not(.empty):hover {
+            background-color: red !important;
+        }
+
+        .mini-day.today {
+            background: yellow;
+        }
+
+        .mini-day.sunday {
+            color: red;
+        }
+</style>
+
+@code {
+    [Parameter] public int SelectedMonth { get; set; }
+    [Parameter] public DateTime? SelectedDay { get; set; }
+    [Parameter] public EventCallback<DateTime> OnDayClicked { get; set; }
+
+    private void OnMiniDayClicked(DateTime day)
+    {
+        OnDayClicked.InvokeAsync(day);
+    }
+}
