@@ -9,35 +9,14 @@
 
 @if (Student == null)
 {
-    @if (AllStudents == null)
-    {
-        <LoadingSpinner />
-    }
-    else if (AllStudents.Count == 0)
-    {
-        <p><strong>No students available.</strong></p>
-    }
-    else
-    {
-        <div class="mb-3">
-            <select class="form-select" style="width: 300px;" @onchange="OnStudentSelected">
-                <option value="">-- Choose a Student --</option>
-                @foreach (var s in AllStudents)
-                {
-                    <option value="@s.Id">@s.FullName</option>
-                }
-            </select>
-        </div>
-    }
+    <LoadingSpinner />
 }
 else
 {
-    <div class="card-body d-flex align-items-start">
-        <img src="id_pic.png"
-                alt="Student Photo"
-                class="rounded border me-3"
-                style="width: 150px; height: 150px; object-fit: cover;" />
-
+    <div class="card-body d-flex align-items-start" style="padding: 0">
+        <img src="id_pic.png" alt="Student Photo"
+            class="rounded border me-3"
+            style="width: 150px; height: 150px; object-fit: cover;" />
         <div>
             <h4 class="mb-1"><strong>@Student.FullName</strong></h4>
             <p class="mb-1">Birthdate: @Student.DateOfBirth</p>
@@ -50,7 +29,7 @@ else
 
     @if (Subjects == null)
     {
-        <p>Loading subjects...</p>
+        <LoadingSpinner />
     }
     else if (!Subjects.Any())
     {
@@ -58,8 +37,7 @@ else
     }
     else
     {
-        <table class="table table-bordered my-3 ms-3 me-3">
-
+        <table class="table table-striped" style="margin-top: 10px">
             <thead>
                 <tr>
                     <th>Subject</th>
@@ -95,7 +73,6 @@ else
                 }
 
             </tbody>
-
         </table>
     }
 }

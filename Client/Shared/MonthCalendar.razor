@@ -1,9 +1,13 @@
 ﻿@using Microsoft.AspNetCore.Components
 
-<div>
+<div class="month-calendar">
     @if (DaysInMonth.Any())
     {
-        <div class="calendar-grid" style="margin-top: 10px">
+        <div class="calendar-month-header">
+            @DaysInMonth.First().ToString("MMMM yyyy")
+        </div>
+
+        <div class="calendar-grid">
             <div class="calendar-header">SUN</div>
             <div class="calendar-header">MON</div>
             <div class="calendar-header">TUE</div>
@@ -37,8 +41,21 @@
 </div>
 
 <style>
+    .month-calendar {
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        border: 1px solid #ccc;
+    }
+
+    .calendar-month-header {
+        padding: 10px 10px 20px 10px;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+    }
+
     .calendar-grid {
-        margin-bottom: 20px;
         display: grid;
         grid-template-columns: repeat(7, 1fr);
         width: 100%;
@@ -49,7 +66,7 @@
         color: white;
         font-weight: bold;
         text-align: center;
-        padding: 5px;
+        padding: 10px;
         border: 1px solid #ccc;
         background-color: royalblue;
     }

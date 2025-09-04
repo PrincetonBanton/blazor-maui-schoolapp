@@ -5,6 +5,8 @@
 @using SchoolApp.Shared.Models
 @using SchoolApp.Client.Shared
 
+
+
 <div class="mb-3 d-flex align-items-center">
     <select id="monthSelect" class="form-select w-25 d-inline-block me-2" @bind="SelectedMonth">
         @for (int m = 1; m <= 12; m++)
@@ -17,48 +19,42 @@
     </button>
 </div>
 
-@if (ShowMonthCalendar)
-{
-    <MonthCalendar DaysInMonth="DaysInMonth"
-                   StartOffset="StartOffset"
-                   EndOffset="EndOffset"
-                   OnDayClicked="OnDayClicked" />
-}
 
 <YearCalendar SelectedMonth="@SelectedMonth"
               SelectedDay="@SelectedDay"
               OnDayClicked="OnDayClicked" />
+<div class="month-calendar-wrapper @(ShowMonthCalendar ? "show" : "hide")">
+    <YearCalendar SelectedMonth="@SelectedMonth"
+                  SelectedDay="@SelectedDay"
+                  OnDayClicked="OnDayClicked" />
+</div>
+<MonthCalendar DaysInMonth="DaysInMonth"
+               StartOffset="StartOffset"
+               EndOffset="EndOffset"
+               OnDayClicked="OnDayClicked" />
+
+<style>
+    .month-calendar-wrapper {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: all 0.5s ease; 
+    }
+
+        .month-calendar-wrapper.show {
+            max-height: 1000px; 
+            opacity: 1;
+        }
+
+</style>
 
 @code {
-    private bool ShowMonthCalendar { get; set; } = false;
-    private void ToggleMonthCalendar()
-    {
-        ShowMonthCalendar = !ShowMonthCalendar;
-    }
-    private DateTime? SelectedDay { get; set; }
-    private void OnMiniDayClicked(DateTime day)
-    {
-        SelectedDay = day;
-        OnDayClicked(day); // still navigate if you want
-    }
-
-    private int _selectedMonth = DateTime.Now.Month;
-    private int SelectedMonth
-    {
-        get => _selectedMonth;
-        set
-        {
-            if (_selectedMonth != value)
-            {
-                _selectedMonth = value;
-                LoadCalendar();
-            }
-        }
-    }
-
     private List<DateTime> DaysInMonth { get; set; } = new();
+    private int _selectedMonth = DateTime.Now.Month;
+    private DateTime? SelectedDay { get; set; }
     private int StartOffset { get; set; } = 0;
     private int EndOffset { get; set; } = 0;
+    private bool ShowMonthCalendar { get; set; } = false;
 
     protected override void OnInitialized()
     {
@@ -71,13 +67,34 @@
             .Select(day => new DateTime(DateTime.Now.Year, SelectedMonth, day))
             .ToList();
 
-        // Offset before first day
         var firstDay = DaysInMonth.First();
-        StartOffset = (int)firstDay.DayOfWeek; // Sunday = 0
-
-        // Offset after last day
         var lastDay = DaysInMonth.Last();
+        StartOffset = (int)firstDay.DayOfWeek;  // Sunday = 0
         EndOffset = 6 - (int)lastDay.DayOfWeek; // Fill up to Saturday
+    }
+
+    private void ToggleMonthCalendar()
+    {
+        ShowMonthCalendar = !ShowMonthCalendar;
+    }
+
+    private void OnMiniDayClicked(DateTime day)
+    {
+        SelectedDay = day;
+        OnDayClicked(day); // still navigate if you want
+    }
+     
+    private int SelectedMonth
+    {
+        get => _selectedMonth;
+        set
+        {
+            if (_selectedMonth != value)
+            {
+                _selectedMonth = value;
+                LoadCalendar();
+            }
+        }
     }
 
     private void OnDayClicked(DateTime day)
