@@ -3,6 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using SchoolApp.Shared.Models;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace SchoolApp.Server.Data
 {
@@ -20,6 +21,8 @@ namespace SchoolApp.Server.Data
         public DbSet<SubGradingItem> SubGradingItems { get; set; }
         public DbSet<SubGradingScore> SubGradingScores { get; set; }
         public DbSet<SchoolYear> SchoolYears { get; set; }
+        public DbSet<GradeLevel> GradeLevels { get; set; }
+
 
     }
 }

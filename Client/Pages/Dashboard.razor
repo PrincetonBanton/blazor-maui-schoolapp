@@ -23,8 +23,27 @@
         + New School Year
     </button>
 </div>
+<div class="d-flex align-items-center mb-3">
+    <select class="form-control me-2" style="width: 300px;" @bind="SelectedGradeLevelId">
+        @if (GradeLevels == null || !GradeLevels.Any())
+        {
+            <option disabled>No grade levels yet</option>
+        }
+        else
+        {
+            @foreach (var gl in GradeLevels)
+            {
+                <option value="@gl.Id">@gl.LevelName</option>
+            }
+        }
+    </select>
+    <button class="btn btn-primary" style="width: 200px;" @onclick="ShowGradeLevelModal">
+        + New School Year
+    </button>
+</div>
 
-@if (ShowModal)
+
+@if (ShowYearModal)
 {
     <div class="modal-backdrop fade show"></div>
     <div class="modal d-block" tabindex="-1">
@@ -52,22 +71,56 @@
         </div>
     </div>
 }
+@if (ShowLevelModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Grade Level</h5>
+                    <button type="button" class="btn-close" @onclick="HideGradeLevelModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">School Year</label>
+                        <input type="text" class="form-control" value="@GetSelectedSchoolYearName()" disabled />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Grade Level Name</label>
+                        <input type="text" class="form-control" @bind="NewGradeLevelName" placeholder="e.g. Grade 1" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" style="width:150px;" @onclick="HideGradeLevelModal">Close</button>
+                    <button class="btn btn-primary" style="width:150px;" @onclick="SaveGradeLevel">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 
 @code {
-    private bool ShowModal = false;
-    private DateTime StartDate { get; set; }
-    private DateTime EndDate { get; set; }
     private List<SchoolYear> SchoolYears { get; set; } = new();
     private Guid? SelectedSchoolYearId { get; set; }
+    private List<GradeLevel> GradeLevels { get; set; } = new();
+    private Guid? SelectedGradeLevelId { get; set; }
+    private DateTime StartDate { get; set; }
+    private DateTime EndDate { get; set; }
+    private bool ShowYearModal = false;
+    private bool ShowLevelModal = false;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadSchoolYears();
 
-        // defaults for the modal
+        //defaults for the modal
         var currentYear = DateTime.Today.Year;
         StartDate = new DateTime(currentYear, 6, 1);
         EndDate = new DateTime(currentYear + 1, 3, 31);
+
+        await LoadGradeLevel();
     }
 
     private async Task LoadSchoolYears()
@@ -76,14 +129,30 @@
         SelectedSchoolYearId = SchoolYears.FirstOrDefault()?.Id;
     }
 
+    private async Task LoadGradeLevel()
+    {
+        GradeLevels = await Http.GetFromJsonAsync<List<GradeLevel>>("api/GradeLevel") ?? new();
+        SelectedGradeLevelId = GradeLevels.FirstOrDefault()?.Id;
+    }
+
     private void ShowSchoolYearModal()
     {
-        ShowModal = true;
+        ShowYearModal = true;
     }
 
     private void HideSchoolYearModal()
     {
-        ShowModal = false;
+        ShowYearModal = false;
+    }
+
+    private void ShowGradeLevelModal()
+    {
+        ShowLevelModal = true;
+    }
+
+    private void HideGradeLevelModal()
+    {
+        ShowLevelModal = false;
     }
 
     private async Task SaveSchoolYear()
@@ -149,5 +218,51 @@
 
         HideSchoolYearModal();
     }
+    private string NewGradeLevelName { get; set; } = string.Empty;
+
+    private string GetSelectedSchoolYearName()
+    {
+        var sy = SchoolYears.FirstOrDefault(y => y.Id == SelectedSchoolYearId);
+        return sy?.SchoolYearName ?? "No school year selected";
+    }
+
+    private async Task SaveGradeLevel()
+    {
+        if (SelectedSchoolYearId == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Please select a School Year first.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(NewGradeLevelName))
+        {
+            await JS.InvokeVoidAsync("alert", "Please enter a grade level name.");
+            return;
+        }
+
+        var gradeLevel = new GradeLevel
+        {
+            Id = Guid.NewGuid(),
+            SchoolYearId = SelectedSchoolYearId.Value,
+            LevelName = NewGradeLevelName
+        };
+
+        var response = await Http.PostAsJsonAsync("api/GradeLevel", gradeLevel);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadGradeLevel();
+            SelectedGradeLevelId = gradeLevel.Id;
+            await JS.InvokeVoidAsync("alert", $"Grade Level {gradeLevel.LevelName} saved!");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Error saving grade level.");
+        }
+
+        HideGradeLevelModal();
+        NewGradeLevelName = string.Empty; // reset field
+    }
+
 
 }
