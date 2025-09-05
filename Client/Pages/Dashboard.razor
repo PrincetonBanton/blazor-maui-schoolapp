@@ -1,15 +1,26 @@
 ﻿@page "/"
 
+@inject HttpClient Http
 @inject IJSRuntime JS
+@using System.Text.Json
+@using SchoolApp.Shared.Models
 
-<div class="d-flex align-items-center" style="margin-bottom: 1rem;">
-    <select class="form-control me-2" style="width: 300px;">
-        <option value="2024-2025">2024–2025</option>
-        <option value="2025-2026">2025–2026</option>
-        <option value="2026-2027">2026–2027</option>
+<div class="d-flex align-items-center mb-3">
+    <select class="form-control me-2" style="width: 300px;" @bind="SelectedSchoolYearId">
+        @if (SchoolYears == null || !SchoolYears.Any())
+        {
+            <option disabled>No school years yet</option>
+        }
+        else
+        {
+            @foreach (var sy in SchoolYears)
+            {
+                <option value="@sy.Id">@sy.SchoolYearName</option>
+            }
+        }
     </select>
     <button class="btn btn-primary" style="width: 200px;" @onclick="ShowSchoolYearModal">
-        Setup School Year
+        + New School Year
     </button>
 </div>
 
@@ -18,8 +29,8 @@
     <div class="modal-backdrop fade show"></div>
     <div class="modal d-block" tabindex="-1">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">Setup School Year</h5>
                     <button type="button" class="btn-close" @onclick="HideSchoolYearModal"></button>
                 </div>
@@ -34,8 +45,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="HideSchoolYearModal">Close</button>
-                    <button class="btn btn-primary" @onclick="SaveSchoolYear">Save</button>
+                    <button class="btn btn-secondary" style="width:150px;" @onclick="HideSchoolYearModal">Close</button>
+                    <button class="btn btn-primary" style="width:150px;" @onclick="SaveSchoolYear">Save</button>
                 </div>
             </div>
         </div>
@@ -46,16 +57,23 @@
     private bool ShowModal = false;
     private DateTime StartDate { get; set; }
     private DateTime EndDate { get; set; }
+    private List<SchoolYear> SchoolYears { get; set; } = new();
+    private Guid? SelectedSchoolYearId { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        await LoadSchoolYears();
+
+        // defaults for the modal
         var currentYear = DateTime.Today.Year;
-
-        // Default Start = June 1 of current year
         StartDate = new DateTime(currentYear, 6, 1);
-
-        // Default End = March 31 of next year
         EndDate = new DateTime(currentYear + 1, 3, 31);
+    }
+
+    private async Task LoadSchoolYears()
+    {
+        SchoolYears = await Http.GetFromJsonAsync<List<SchoolYear>>("api/SchoolYear") ?? new();
+        SelectedSchoolYearId = SchoolYears.FirstOrDefault()?.Id;
     }
 
     private void ShowSchoolYearModal()
@@ -70,7 +88,66 @@
 
     private async Task SaveSchoolYear()
     {
-        await JS.InvokeVoidAsync("alert", $"School Year: {StartDate:yyyy-MM-dd} - {EndDate:yyyy-MM-dd}");
+        // Check for duplicate school year by StartDate.Year
+        var duplicate = SchoolYears.FirstOrDefault(sy => sy.StartDate.Year == StartDate.Year);
+
+        if (duplicate != null)
+        {
+            // Ask user if they want to update instead of insert
+            var confirm = await JS.InvokeAsync<bool>("confirm",
+                $"A school year starting {StartDate.Year} already exists ({duplicate.SchoolYearName}). Do you want to update it?");
+
+            if (confirm)
+            {
+                // Update existing school year
+                duplicate.StartDate = StartDate;
+                duplicate.EndDate = EndDate;
+                duplicate.SchoolYearName = $"{StartDate.Year}-{EndDate.Year}";
+
+                var response = await Http.PutAsJsonAsync($"api/SchoolYear/{duplicate.Id}", duplicate);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadSchoolYears();
+                    SelectedSchoolYearId = duplicate.Id;
+                    await JS.InvokeVoidAsync("alert", $"School Year {duplicate.SchoolYearName} updated!");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "Error updating school year.");
+                }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Save cancelled.");
+            }
+        }
+        else
+        {
+            // No duplicate, create new
+            var schoolYear = new SchoolYear
+            {
+                Id = Guid.NewGuid(),
+                StartDate = StartDate,
+                EndDate = EndDate,
+                SchoolYearName = $"{StartDate.Year}-{EndDate.Year}"
+            };
+
+            var response = await Http.PostAsJsonAsync("api/SchoolYear", schoolYear);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadSchoolYears();
+                SelectedSchoolYearId = schoolYear.Id;
+                await JS.InvokeVoidAsync("alert", $"School Year {schoolYear.SchoolYearName} saved!");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error saving school year.");
+            }
+        }
+
         HideSchoolYearModal();
     }
+
 }
