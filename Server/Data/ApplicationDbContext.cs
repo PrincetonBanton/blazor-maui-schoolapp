@@ -22,7 +22,6 @@ namespace SchoolApp.Server.Data
         public DbSet<SubGradingScore> SubGradingScores { get; set; }
         public DbSet<SchoolYear> SchoolYears { get; set; }
         public DbSet<GradeLevel> GradeLevels { get; set; }
-
-
+        public DbSet<SchoolSection> SchoolSections { get; set; }
     }
 }

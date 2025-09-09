@@ -14,11 +14,36 @@ else if (!subjects.Any())
 }
 else
 {
-    <div class="d-flex align-items-center" style="margin-bottom: 1rem;">
-        <input type="text" class="form-control me-2" placeholder="New Subject Name"
-               style="width: 300px;" @bind="NewSubjectName" />
-        <button class="btn btn-primary" style="width: 200px;" @onclick="AddSubject">Subject +</button>
+    <!-- Button to open modal -->
+    <div class="mb-3">
+        <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+                style="width: 50px; height: 50px; margin-bottom: 10px; font-size:larger" @onclick="ShowAddSubjectModal">
+            + 
+        </button>
     </div>
+
+    <!-- Modal -->
+    @if (ShowModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Subject</h5>
+                        <button type="button" class="btn-close" @onclick="HideAddSubjectModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" class="form-control mb-3" placeholder="New Subject Name"
+                               @bind="NewSubjectName" />
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="HideAddSubjectModal">Cancel</button>
+                        <button class="btn btn-primary" @onclick="AddSubject">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
     <table class="table table-striped">
         <tbody>
             @{
@@ -65,6 +90,7 @@ else
 @code {
     private List<Subject>? subjects;
     private string NewSubjectName = string.Empty;
+    private bool ShowModal = false; // <-- added
 
     protected override async Task OnInitializedAsync()
     {
@@ -122,6 +148,8 @@ else
         }
     }
 
+    private void ShowAddSubjectModal() => ShowModal = true;  // <-- added
+    private void HideAddSubjectModal() => ShowModal = false; // <-- added
     //JS.InvokeVoidAsync("alert", $"subcount: {component}");
     //var json = JsonSerializer.Serialize(component, new JsonSerializerOptions { WriteIndented = true });
     //JS.InvokeVoidAsync("alert", json);
