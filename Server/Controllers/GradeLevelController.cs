@@ -42,6 +42,19 @@ public class GradeLevelController : ControllerBase
         return Ok(grade);
     }
 
+    // GET: api/GradeLevel/bySchoolYear/{schoolYearId}
+    [HttpGet("bySchoolYear/{schoolYearId}")]
+    public async Task<ActionResult<IEnumerable<GradeLevel>>> GetBySchoolYear(Guid schoolYearId)
+    {
+        var grades = await _context.GradeLevels
+            .Where(g => g.SchoolYearId == schoolYearId)
+            .Include(g => g.SchoolYear)
+            .OrderBy(g => g.LevelName)
+            .ToListAsync();
+
+        return Ok(grades);
+    }
+
     // POST: api/GradeLevel
     [HttpPost]
     public async Task<ActionResult<GradeLevel>> CreateGradeLevel(GradeLevel gradeLevel)

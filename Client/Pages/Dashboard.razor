@@ -7,19 +7,15 @@
 
 <div class="d-flex align-items-start mb-3">
     <div class="me-3 d-flex align-items-center">
-        <select class="form-control" style="width: 300px;" @bind="SelectedSchoolYearId">
-            @if (SchoolYears == null || !SchoolYears.Any())
+        <select class="form-control" style="width: 300px;" @onchange="OnSchoolYearChanged">
+            <option value="" disabled selected hidden>Select School Year</option>
+            @foreach (var sy in SchoolYears)
             {
-                <option disabled>No school years yet</option>
-            }
-            else
-            {
-                @foreach (var sy in SchoolYears)
-                {
-                    <option value="@sy.Id">@sy.SchoolYearName</option>
-                }
+                <option value="@sy.Id">@sy.SchoolYearName</option>
             }
         </select>
+
+
         <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
                 style="width: 30px; height: 30px; margin-left: 5px; font-size:larger" @onclick="ShowSchoolYearModal">
             +
@@ -27,7 +23,8 @@
     </div>
 
     <div class="me-3 d-flex align-items-center">
-        <select class="form-control" style="width: 300px;" @bind="SelectedGradeLevelId">
+        <select class="form-control" style="width: 300px;" @onchange="OnGradeLevelChanged">
+            <option value="" disabled selected hidden>Select Grade Level</option>
             @if (GradeLevels == null || !GradeLevels.Any())
             {
                 <option disabled>No grade levels yet</option>
@@ -47,7 +44,8 @@
     </div>
 
     <div class="me-3 d-flex align-items-center">
-        <select class="form-control" style="width: 300px;" @bind="SelectedSchoolSectionId">
+        <select class="form-control" style="width: 300px;" @onchange="OnSchoolSectionChanged">
+            <option value="" disabled selected hidden>Select School Section</option>
             @if (SchoolSections == null || !SchoolSections.Any())
             {
                 <option disabled>No school sections yet</option>
@@ -159,13 +157,16 @@
 
 @code {
     private List<SchoolYear> SchoolYears { get; set; } = new();
-    private Guid? SelectedSchoolYearId { get; set; }
     private List<GradeLevel> GradeLevels { get; set; } = new();
-    private Guid? SelectedGradeLevelId { get; set; }
     private List<SchoolSection> SchoolSections{ get; set; } = new();
+
+    private Guid? SelectedSchoolYearId { get; set; }
+    private Guid? SelectedGradeLevelId { get; set; }
     private Guid? SelectedSchoolSectionId { get; set; }
-    private DateTime StartDate { get; set; }
-    private DateTime EndDate { get; set; }
+
+    private DateTime StartDate { get; set; } = DateTime.Today; // today's date
+    private DateTime EndDate { get; set; } = DateTime.Today.AddMonths(10); // 10 months later
+
     private bool ShowYearModal = false;
     private bool ShowLevelModal = false;
     private bool ShowSectionModal = false;
@@ -175,31 +176,68 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadSchoolYears();
-
-        //defaults for the modal
-        var currentYear = DateTime.Today.Year;
-        StartDate = new DateTime(currentYear, 6, 1);
-        EndDate = new DateTime(currentYear + 1, 3, 31);
-
-        await LoadGradeLevel();
-        await LoadSchoolSection();
     }
 
     private async Task LoadSchoolYears()
     {
         SchoolYears = await Http.GetFromJsonAsync<List<SchoolYear>>("api/SchoolYear") ?? new();
-        SelectedSchoolYearId = SchoolYears.FirstOrDefault()?.Id;
+    }
+    private async Task OnSchoolYearChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SelectedSchoolYearId = id;
+            var selectedName = SchoolYears.FirstOrDefault(sy => sy.Id == id)?.SchoolYearName;
+            await JS.InvokeVoidAsync("alert", $"Selected: {id} - {selectedName}");
+            await LoadGradeLevel();
+        }
     }
 
     private async Task LoadGradeLevel()
     {
-        GradeLevels = await Http.GetFromJsonAsync<List<GradeLevel>>("api/GradeLevel") ?? new();
-        SelectedGradeLevelId = GradeLevels.FirstOrDefault()?.Id;
+        if (SelectedSchoolYearId == null)
+        {
+            GradeLevels = new();
+            return;
+        }
+
+        GradeLevels = await Http.GetFromJsonAsync<List<GradeLevel>>(
+            $"api/GradeLevel/BySchoolYear/{SelectedSchoolYearId}"
+        ) ?? new();
     }
+    private async Task OnGradeLevelChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SelectedGradeLevelId = id;
+            var selectedLevel = GradeLevels.FirstOrDefault(sy => sy.Id == id)?.LevelName;
+            await JS.InvokeVoidAsync("alert", $"Selected: {id} - {selectedLevel}");
+            await LoadSchoolSection();
+        }
+    }
+
     private async Task LoadSchoolSection()
     {
-        SchoolSections = await Http.GetFromJsonAsync<List<SchoolSection>>("api/SchoolSection") ?? new();
-        SelectedSchoolSectionId = SchoolSections.FirstOrDefault()?.Id;
+        if (SelectedGradeLevelId == null)
+        {
+            SchoolSections = new();
+            return;
+        }
+
+        SchoolSections = await Http.GetFromJsonAsync<List<SchoolSection>>(
+            $"api/SchoolSection/ByGradeLevel/{SelectedGradeLevelId}"
+        ) ?? new();
+
+    }
+    private async Task OnSchoolSectionChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SelectedSchoolSectionId = id;
+            var selectedSection = SchoolSections.FirstOrDefault(sy => sy.Id == id)?.SectionName;
+            await JS.InvokeVoidAsync("alert", $"Selected: {id} - {selectedSection}");
+            ShowSectionData();
+        }
     }
 
     private async Task SaveSchoolYear()

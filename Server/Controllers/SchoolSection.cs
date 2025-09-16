@@ -43,6 +43,18 @@ public class SchoolSectionController : ControllerBase
         return Ok(section);
     }
 
+    // GET: api/SchoolSection/byGradeLevel/{gradeLevelId}
+    [HttpGet("byGradeLevel/{gradeLevelId}")]
+    public async Task<ActionResult<IEnumerable<SchoolSection>>> GetByGradeLevel(Guid gradeLevelId)
+    {
+        var sections = await _context.SchoolSections
+            .Where(s => s.GradeLevelId == gradeLevelId)
+            .Include(s => s.GradeLevel)
+            .OrderBy(s => s.SectionName)
+            .ToListAsync();
+
+        return Ok(sections);
+    }
     // POST: api/SchoolSection
     [HttpPost]
     public async Task<ActionResult<SchoolSection>> CreateSchoolSection(SchoolSection schoolSection)
