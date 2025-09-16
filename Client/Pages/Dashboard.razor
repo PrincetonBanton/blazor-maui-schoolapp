@@ -1,9 +1,11 @@
 ﻿@page "/"
 
-@inject HttpClient Http
-@inject IJSRuntime JS
 @using System.Text.Json
 @using SchoolApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
+
 
 <div class="d-flex align-items-start mb-3">
     <div class="me-3 d-flex align-items-center">
@@ -187,8 +189,8 @@
         if (Guid.TryParse(e.Value?.ToString(), out var id))
         {
             SelectedSchoolYearId = id;
+            SchoolContext.SelectedSchoolYearId = id; // save globally
             var selectedName = SchoolYears.FirstOrDefault(sy => sy.Id == id)?.SchoolYearName;
-            await JS.InvokeVoidAsync("alert", $"Selected: {id} - {selectedName}");
             await LoadGradeLevel();
         }
     }
@@ -210,8 +212,8 @@
         if (Guid.TryParse(e.Value?.ToString(), out var id))
         {
             SelectedGradeLevelId = id;
+            SchoolContext.SelectedGradeLevelId = id; // save globally
             var selectedLevel = GradeLevels.FirstOrDefault(sy => sy.Id == id)?.LevelName;
-            await JS.InvokeVoidAsync("alert", $"Selected: {id} - {selectedLevel}");
             await LoadSchoolSection();
         }
     }
@@ -234,11 +236,24 @@
         if (Guid.TryParse(e.Value?.ToString(), out var id))
         {
             SelectedSchoolSectionId = id;
+            SchoolContext.SelectedSchoolSectionId = id; // save globally
             var selectedSection = SchoolSections.FirstOrDefault(sy => sy.Id == id)?.SectionName;
-            await JS.InvokeVoidAsync("alert", $"Selected: {id} - {selectedSection}");
             ShowSectionData();
         }
     }
+    private async Task ShowSectionData()
+    {
+        var sy = SelectedSchoolYearId?.ToString() ?? "None";
+        var gl = SelectedGradeLevelId?.ToString() ?? "None";
+        var ss = SelectedSchoolSectionId?.ToString() ?? "None";
+        await JS.InvokeVoidAsync("alert", $"SchoolYearId: {sy}\nGradeLevelId: {gl}\nSchoolSectionId: {ss}");
+
+        await JS.InvokeVoidAsync("alert",
+            $"SchoolYearId: {SchoolContext.SelectedSchoolYearId}\n" +
+            $"GradeLevelId: {SchoolContext.SelectedGradeLevelId}\n" +
+            $"SchoolSectionId: {SchoolContext.SelectedSchoolSectionId}");
+    }
+
 
     private async Task SaveSchoolYear()
     {

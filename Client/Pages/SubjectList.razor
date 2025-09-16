@@ -1,8 +1,14 @@
 ﻿@page "/subject/list"
-@inject HttpClient Http
-@inject IJSRuntime JS
+
 @using System.Text.Json
 @using SchoolApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
+
+<p>Selected SchoolYearId: @SchoolContext.SelectedSchoolYearId</p>
+<p>Selected GradeLevelId: @SchoolContext.SelectedGradeLevelId</p>
+<p>Selected SectionId: @SchoolContext.SelectedSchoolSectionId</p>
 
 @if (subjects == null)
 {
