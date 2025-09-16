@@ -6,10 +6,6 @@
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-<p>Selected SchoolYearId: @SchoolContext.SelectedSchoolYearId</p>
-<p>Selected GradeLevelId: @SchoolContext.SelectedGradeLevelId</p>
-<p>Selected SectionId: @SchoolContext.SelectedSchoolSectionId</p>
-
 @if (subjects == null)
 {
     <LoadingSpinner />
@@ -20,15 +16,25 @@ else if (!subjects.Any())
 }
 else
 {
-    <!-- Button to open modal -->
-    <div class="mb-3">
-        <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
-                style="width: 50px; height: 50px; margin-bottom: 10px; font-size:larger" @onclick="ShowAddSubjectModal">
-            + 
-        </button>
+
+    <div class="row mb-3">
+        <div class="col-6">
+            @* <div>School Year: @SchoolContext.SelectedSchoolYearId</div> *@
+            @* <div>Grade Level: @SchoolContext.SelectedGradeLevelId</div> *@
+            @* <div>School Section: @SchoolContext.SelectedSchoolSectionId</div> *@
+            <div>School Year: @SchoolContext.GetSelectedSchoolYearName()</div>
+            <div>Grade Level: @SchoolContext.GetSelectedGradeLevelName()</div>
+            <div>School Section: @SchoolContext.GetSelectedSchoolSectionName()</div>
+        </div>
+        <div class="col-6 d-flex justify-content-end align-items-end">
+            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 50px; height: 50px; font-size:larger"
+                    @onclick="ShowAddSubjectModal">
+                +
+            </button>
+        </div>
     </div>
 
-    <!-- Modal -->
     @if (ShowModal)
     {
         <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">

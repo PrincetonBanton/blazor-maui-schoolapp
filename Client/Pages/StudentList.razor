@@ -1,8 +1,9 @@
 ﻿@page "/students/list"
-@inject HttpClient Http
-@inject IJSRuntime JS
 @using System.Text.Json
 @using SchoolApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
 @if (Students.Count == 0)
 {
@@ -10,11 +11,23 @@
 }
 else
 {
-    <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" 
-        style="width: 50px; height: 50px; margin-bottom: 10px; font-size:larger" 
-        @onclick="ShowStudentModal">
-        +
-    </button>
+    <div class="row mb-3">
+        <div class="col-6">
+            @* <div>School Year: @SchoolContext.SelectedSchoolYearId</div> *@
+            @* <div>Grade Level: @SchoolContext.SelectedGradeLevelId</div> *@
+            @* <div>School Section: @SchoolContext.SelectedSchoolSectionId</div> *@
+            <div>School Year: @SchoolContext.GetSelectedSchoolYearName()</div>
+            <div>Grade Level: @SchoolContext.GetSelectedGradeLevelName()</div>
+            <div>School Section: @SchoolContext.GetSelectedSchoolSectionName()</div>
+        </div>
+        <div class="col-6 d-flex justify-content-end align-items-end">
+            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+                    style="width: 50px; height: 50px; font-size:larger"
+                    @onclick="ShowStudentModal">
+                +
+            </button>
+        </div>
+    </div>
 
     <table class="table table-striped">
         <tbody>

@@ -108,7 +108,7 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">School Year</label>
-                        <input type="text" class="form-control" value="@GetSelectedSchoolYearName()" disabled />
+                        <input type="text" class="form-control" value="@SchoolContext.GetSelectedSchoolYearName()" disabled />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Grade Level Name</label>
@@ -136,11 +136,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">School Year</label>
-                        <input type="text" class="form-control" value="@GetSelectedSchoolYearName()" disabled />
+                        <input type="text" class="form-control" value="@SchoolContext.GetSelectedSchoolYearName()" disabled />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Grade Level</label>
-                        <input type="text" class="form-control" value="@GetSelectedGradeLevelName()" disabled />
+                        <input type="text" class="form-control" value="@SchoolContext.GetSelectedGradeLevelName()" disabled />
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Section Name</label>
@@ -183,6 +183,7 @@
     private async Task LoadSchoolYears()
     {
         SchoolYears = await Http.GetFromJsonAsync<List<SchoolYear>>("api/SchoolYear") ?? new();
+        SchoolContext.SetSchoolYears(SchoolYears); // push into shared service
     }
     private async Task OnSchoolYearChanged(ChangeEventArgs e)
     {
@@ -206,6 +207,7 @@
         GradeLevels = await Http.GetFromJsonAsync<List<GradeLevel>>(
             $"api/GradeLevel/BySchoolYear/{SelectedSchoolYearId}"
         ) ?? new();
+        SchoolContext.SetGradeLevels(GradeLevels); // push into shared service
     }
     private async Task OnGradeLevelChanged(ChangeEventArgs e)
     {
@@ -229,7 +231,7 @@
         SchoolSections = await Http.GetFromJsonAsync<List<SchoolSection>>(
             $"api/SchoolSection/ByGradeLevel/{SelectedGradeLevelId}"
         ) ?? new();
-
+        SchoolContext.SetSchoolSections(SchoolSections); // push into shared service
     }
     private async Task OnSchoolSectionChanged(ChangeEventArgs e)
     {
@@ -394,17 +396,6 @@
 
         HideSchoolSectionModal();
         NewSchoolSectionName = string.Empty; 
-    }
-
-    private string GetSelectedSchoolYearName()
-    {
-        var sy = SchoolYears.FirstOrDefault(y => y.Id == SelectedSchoolYearId);
-        return sy?.SchoolYearName ?? "No school year selected";
-    }
-    private string GetSelectedGradeLevelName()
-    {
-        var gl = GradeLevels.FirstOrDefault(s => s.Id == SelectedGradeLevelId);
-        return gl?.LevelName ?? "No school year selected";
     }
 
     private void ShowSchoolYearModal() { ShowYearModal = true; }
