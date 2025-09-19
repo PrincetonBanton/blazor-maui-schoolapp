@@ -5,9 +5,13 @@
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-@if (Students.Count == 0)
+@if (students == null)
 {
     <LoadingSpinner />
+}
+else if (!students.Any())
+{
+    <p>No students found.</p>
 }
 else
 {
@@ -31,7 +35,7 @@ else
 
     <table class="table table-striped">
         <tbody>
-            @if (Students.Count == 0)
+            @if (students.Count == 0)
             {
                 <tr>
                     <td colspan="7" class="text-center text-muted">No student data to display yet.</td>
@@ -40,7 +44,7 @@ else
             else
             {
                 var index = 1;
-                foreach (var student in Students)
+                foreach (var student in students)
                 {
                     <tr>
                         <td>@index</td>
@@ -98,7 +102,7 @@ else
 }
 
 @code {
-    private List<Student> Students = new();
+    private List<Student> students = new();
     private Student NewStudent = new();
     private bool ShowModal = false;
 
@@ -111,13 +115,24 @@ else
     {
         try
         {
-            Students = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+            var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+
+            if (SchoolContext.SelectedSchoolSectionId.HasValue)
+            {
+                students = allStudents
+                    .Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
+                    .ToList();
+            }
+            else
+            {
+                students = new(); // No grade level selected → no subjects
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading students: {ex.Message}");
             await JS.InvokeVoidAsync("alert", "Failed to load students.");
         }
+
     }
 
     private void ShowStudentModal()

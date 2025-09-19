@@ -12,10 +12,10 @@ namespace SchoolApp.Shared.Services
         private List<GradeLevel> GradeLevels { get; set; } = new();
         private List<SchoolSection> SchoolSections { get; set; } = new();
 
-
         public void SetSchoolYears(List<SchoolYear> years) => SchoolYears = years;
         public void SetGradeLevels(List<GradeLevel> levels) => GradeLevels = levels;
         public void SetSchoolSections(List<SchoolSection> sections) => SchoolSections = sections;
+
         public string GetSelectedSchoolYearName()
         {
             var sy = SchoolYears.FirstOrDefault(y => y.Id == SelectedSchoolYearId);
@@ -33,5 +33,13 @@ namespace SchoolApp.Shared.Services
             var ss = SchoolSections.FirstOrDefault(s => s.Id == SelectedSchoolSectionId);
             return ss?.SectionName ?? "No grade level selected";
         }
+
+        public event Action? OnShowSchoolYearModal;
+        public event Action? OnShowGradeLevelModal;
+        public event Action? OnShowSchoolSectionModal;
+        public void TriggerShowSchoolYearModal() => OnShowSchoolYearModal?.Invoke();
+        public void TriggerShowGradeLevelModal() => OnShowGradeLevelModal?.Invoke();
+        public void TriggerShowSchoolSectionModal() => OnShowSchoolSectionModal?.Invoke();
     }
+
 }

@@ -1,10 +1,11 @@
 ﻿@page "/subject/list"
-
 @using System.Text.Json
 @using SchoolApp.Shared.Models
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
+
+<SchoolContextSelector />
 
 @if (subjects == null)
 {
@@ -102,7 +103,7 @@ else
 @code {
     private List<Subject>? subjects;
     private string NewSubjectName = string.Empty;
-    private bool ShowModal = false; // <-- added
+    private bool ShowModal = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -113,13 +114,25 @@ else
     {
         try
         {
-            subjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+            var allSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+
+            if (SchoolContext.SelectedGradeLevelId.HasValue)
+            {
+                subjects = allSubjects
+                    .Where(s => s.GradeLevelId == SchoolContext.SelectedGradeLevelId.Value)
+                    .ToList();
+            }
+            else
+            {
+                subjects = new(); // No grade level selected → no subjects
+            }
         }
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Error loading subjects: {ex.Message}");
         }
     }
+
 
     private async Task AddSubject()
     {

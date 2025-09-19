@@ -3,7 +3,7 @@
 public class Student
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-
+    public Guid? SchoolSectionId { get; set; }
     public string FirstName { get; set; } = string.Empty;
     public string? MiddleName { get; set; } 
     public string LastName { get; set; } = string.Empty;

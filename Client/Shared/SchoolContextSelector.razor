@@ -1,0 +1,154 @@
+﻿@using SchoolApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
+
+<div class="d-flex align-items-start mb-3">
+    <!-- School Year -->
+    <div class="me-3 d-flex align-items-center">
+        <select class="form-control" style="width: 300px;" @onchange="OnSchoolYearChanged">
+            <option value="" disabled selected hidden>Select School Year</option>
+            @foreach (var sy in SchoolYears)
+            {
+                <option value="@sy.Id" selected="@(sy.Id == SchoolContext.SelectedSchoolYearId)">
+                    @sy.SchoolYearName
+                </option>
+            }
+        </select>
+        <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+                style="width: 30px; height: 30px; margin-left: 5px; font-size:larger" @onclick="ShowSchoolYearModal">
+            +
+        </button>
+    </div>
+
+    <!-- Grade Level -->
+    <div class="me-3 d-flex align-items-center">
+        <select class="form-control" style="width: 300px;" @onchange="OnGradeLevelChanged">
+            <option value="" disabled selected hidden>Select Grade Level</option>
+            @if (GradeLevels == null || !GradeLevels.Any())
+            {
+                <option disabled>No grade levels yet</option>
+            }
+            else
+            {
+                @foreach (var gl in GradeLevels)
+                {
+                    <option value="@gl.Id" selected="@(gl.Id == SchoolContext.SelectedGradeLevelId)">
+                        @gl.LevelName
+                    </option>
+                }
+            }
+        </select>
+        <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+                style="width: 30px; height: 30px; margin-left: 5px; font-size:larger" @onclick="ShowGradeLevelModal">
+            +
+        </button>
+    </div>
+
+    <!-- School Section -->
+    <div class="me-3 d-flex align-items-center">
+        <select class="form-control" style="width: 300px;" @onchange="OnSchoolSectionChanged">
+            <option value="" disabled selected hidden>Select School Section</option>
+            @if (SchoolSections == null || !SchoolSections.Any())
+            {
+                <option disabled>No school sections yet</option>
+            }
+            else
+            {
+                @foreach (var ss in SchoolSections)
+                {
+                    <option value="@ss.Id" selected="@(ss.Id == SchoolContext.SelectedSchoolSectionId)">
+                        @ss.SectionName
+                    </option>
+                }
+            }
+        </select>
+        <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+                style="width: 30px; height: 30px; margin-left: 5px; font-size:larger" @onclick="ShowSchoolSectionModal">
+            +
+        </button>
+    </div>
+</div>
+
+@code {
+    private List<SchoolYear> SchoolYears { get; set; } = new();
+    private List<GradeLevel> GradeLevels { get; set; } = new();
+    private List<SchoolSection> SchoolSections { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSchoolYears();
+
+        // Restore already selected
+        if (SchoolContext.SelectedSchoolYearId.HasValue)
+            await LoadGradeLevel();
+        if (SchoolContext.SelectedGradeLevelId.HasValue)
+            await LoadSchoolSection();
+    }
+
+    private async Task LoadSchoolYears()
+    {
+        SchoolYears = await Http.GetFromJsonAsync<List<SchoolYear>>("api/SchoolYear") ?? new();
+        SchoolContext.SetSchoolYears(SchoolYears);
+    }
+
+    private async Task OnSchoolYearChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SchoolContext.SelectedSchoolYearId = id;
+            await LoadGradeLevel();
+        }
+    }
+
+    private async Task LoadGradeLevel()
+    {
+        if (SchoolContext.SelectedSchoolYearId == null)
+        {
+            GradeLevels = new();
+            return;
+        }
+
+        GradeLevels = await Http.GetFromJsonAsync<List<GradeLevel>>(
+            $"api/GradeLevel/BySchoolYear/{SchoolContext.SelectedSchoolYearId}"
+        ) ?? new();
+
+        SchoolContext.SetGradeLevels(GradeLevels);
+    }
+
+    private async Task OnGradeLevelChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SchoolContext.SelectedGradeLevelId = id;
+            await LoadSchoolSection();
+        }
+    }
+
+    private async Task LoadSchoolSection()
+    {
+        if (SchoolContext.SelectedGradeLevelId == null)
+        {
+            SchoolSections = new();
+            return;
+        }
+
+        SchoolSections = await Http.GetFromJsonAsync<List<SchoolSection>>(
+            $"api/SchoolSection/ByGradeLevel/{SchoolContext.SelectedGradeLevelId}"
+        ) ?? new();
+
+        SchoolContext.SetSchoolSections(SchoolSections);
+    }
+
+    private async Task OnSchoolSectionChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SchoolContext.SelectedSchoolSectionId = id;
+        }
+    }
+
+    private void ShowSchoolYearModal() => SchoolContext.TriggerShowSchoolYearModal();
+    private void ShowGradeLevelModal() => SchoolContext.TriggerShowGradeLevelModal();
+    private void ShowSchoolSectionModal() => SchoolContext.TriggerShowSchoolSectionModal();
+}
