@@ -118,8 +118,28 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Subscribe to modal events
+        SchoolContext.OnShowSchoolYearModal += () =>
+        {
+            ShowYearModal = true;
+            StateHasChanged(); // refresh UI
+        };
+
+        SchoolContext.OnShowGradeLevelModal += () =>
+        {
+            ShowLevelModal = true;
+            StateHasChanged();
+        };
+
+        SchoolContext.OnShowSchoolSectionModal += () =>
+        {
+            ShowSectionModal = true;
+            StateHasChanged();
+        };
+
         await LoadSchoolYears();
     }
+
 
     private async Task LoadSchoolYears()
     {

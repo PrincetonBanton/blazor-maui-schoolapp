@@ -12,6 +12,8 @@ namespace SchoolApp.Shared.Services
         private List<GradeLevel> GradeLevels { get; set; } = new();
         private List<SchoolSection> SchoolSections { get; set; } = new();
 
+        public event Action? OnContextChanged;
+
         public void SetSchoolYears(List<SchoolYear> years) => SchoolYears = years;
         public void SetGradeLevels(List<GradeLevel> levels) => GradeLevels = levels;
         public void SetSchoolSections(List<SchoolSection> sections) => SchoolSections = sections;
