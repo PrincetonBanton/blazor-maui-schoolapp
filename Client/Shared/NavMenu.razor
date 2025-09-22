@@ -20,40 +20,9 @@
             <NavLink class="nav-link" href="/attendance/calendar">
                 <span class="oi oi-list-rich" aria-hidden="true"></span> Attendance
             </NavLink>
-
-         @* <div class="nav-link dropdown-toggle" role="button" @onclick="ToggleSubjectDropdown">
-                <span class="oi oi-book" aria-hidden="true"></span> Subject
-            </div>
-            @if (ShowSubjectDropdown)
-            {
-                <div class="ms-4">
-                    <NavLink class="nav-link" href="subject/list">
-                        <span class="oi oi-list-rich" aria-hidden="true"></span> List
-                    </NavLink>
-                    <NavLink class="nav-link" href="subject/setup">
-                        <span class="oi oi-list-rich" aria-hidden="true"></span> Setup
-                    </NavLink>
-                    <NavLink class="nav-link" href="subject/template">
-                        <span class="oi oi-list-rich" aria-hidden="true"></span> Template
-                    </NavLink>
-                </div>
-            }
-
-         <div class="nav-link dropdown-toggle" role="button" @onclick="ToggleStudentDropdown">
-                <span class="oi oi-person" aria-hidden="true"></span> Student
-            </div>
-            @if (ShowStudentDropdown)
-            {
-                <div class="ms-4">
-                    <NavLink class="nav-link" href="/students/list">
-                        <span class="oi oi-list-rich" aria-hidden="true"></span> List
-                    </NavLink>
-                    <NavLink class="nav-link" href="/students/card">
-                        <span class="oi oi-file" aria-hidden="true"></span> Report Card
-                    </NavLink>
-                </div>
-            } *@
-
+            <NavLink class="nav-link" href="/setup">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> Setup
+            </NavLink>
         </div>
     </nav>
 </div>

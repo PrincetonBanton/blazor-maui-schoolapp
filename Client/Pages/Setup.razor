@@ -1,4 +1,5 @@
-﻿@using SchoolApp.Shared.Models
+﻿@page "/setup"
+@using SchoolApp.Shared.Models
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
@@ -15,10 +16,10 @@
                 </option>
             }
         </select>
-@*         <button class="btn btn-primary rounded-circle" style="width:30px; height:30px; margin-left:5px;"
+        <button class="btn btn-primary rounded-circle" style="width:30px; height:30px; margin-left:5px;"
                 @onclick="() => ShowYearModal = true">
             +
-        </button> *@
+        </button>
     </div>
 
     <!-- Grade Level -->
@@ -39,10 +40,10 @@
                 }
             }
         </select>
-@*         <button class="btn btn-primary rounded-circle" style="width:30px; height:30px; margin-left:5px;"
+        <button class="btn btn-primary rounded-circle" style="width:30px; height:30px; margin-left:5px;"
                 @onclick="() => ShowLevelModal = true">
             +
-        </button> *@
+        </button>
     </div>
 
     <!-- School Section -->
@@ -63,10 +64,10 @@
                 }
             }
         </select>
-@*         <button class="btn btn-primary rounded-circle" style="width:30px; height:30px; margin-left:5px;"
+        <button class="btn btn-primary rounded-circle" style="width:30px; height:30px; margin-left:5px;"
                 @onclick="() => ShowSectionModal = true">
             +
-        </button> *@
+        </button>
     </div>
 </div>
 
