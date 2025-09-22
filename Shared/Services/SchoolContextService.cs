@@ -4,9 +4,9 @@ namespace SchoolApp.Shared.Services
 {
     public class SchoolContextService
     {
-        public Guid? SelectedSchoolYearId { get; set; }
-        public Guid? SelectedGradeLevelId { get; set; }
-        public Guid? SelectedSchoolSectionId { get; set; }
+        public Guid? SelectedSchoolYearId { get; private set; }
+        public Guid? SelectedGradeLevelId { get; private set; }
+        public Guid? SelectedSchoolSectionId { get; private set; }
 
         private List<SchoolYear> SchoolYears { get; set; } = new();
         private List<GradeLevel> GradeLevels { get; set; } = new();
@@ -17,6 +17,25 @@ namespace SchoolApp.Shared.Services
         public void SetSchoolYears(List<SchoolYear> years) => SchoolYears = years;
         public void SetGradeLevels(List<GradeLevel> levels) => GradeLevels = levels;
         public void SetSchoolSections(List<SchoolSection> sections) => SchoolSections = sections;
+
+        // 🔑 Fire OnContextChanged when IDs change
+        public void UpdateSchoolYear(Guid? id)
+        {
+            SelectedSchoolYearId = id;
+            OnContextChanged?.Invoke();
+        }
+
+        public void UpdateGradeLevel(Guid? id)
+        {
+            SelectedGradeLevelId = id;
+            OnContextChanged?.Invoke();
+        }
+
+        public void UpdateSchoolSection(Guid? id)
+        {
+            SelectedSchoolSectionId = id;
+            OnContextChanged?.Invoke();
+        }
 
         public string GetSelectedSchoolYearName()
         {
@@ -33,7 +52,7 @@ namespace SchoolApp.Shared.Services
         public string GetSelectedSchoolSectionName()
         {
             var ss = SchoolSections.FirstOrDefault(s => s.Id == SelectedSchoolSectionId);
-            return ss?.SectionName ?? "No grade level selected";
+            return ss?.SectionName ?? "No section selected";
         }
 
         public event Action? OnShowSchoolYearModal;
@@ -43,5 +62,4 @@ namespace SchoolApp.Shared.Services
         public void TriggerShowGradeLevelModal() => OnShowGradeLevelModal?.Invoke();
         public void TriggerShowSchoolSectionModal() => OnShowSchoolSectionModal?.Invoke();
     }
-
 }
