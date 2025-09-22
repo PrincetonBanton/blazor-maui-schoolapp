@@ -5,6 +5,8 @@
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
+<SchoolContextSelector />
+
 @if (students == null)
 {
     <LoadingSpinner />
@@ -108,10 +110,15 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadStudentsAsync();
+        SchoolContext.OnContextChanged += async () =>
+        {
+            await LoadStudents();
+            StateHasChanged();
+        };
+                await LoadStudents();
     }
 
-    private async Task LoadStudentsAsync()
+    private async Task LoadStudents()
     {
         try
         {
@@ -156,7 +163,7 @@ else
         {
             await JS.InvokeVoidAsync("alert", "Student saved!");
             HideStudentModal();
-            await LoadStudentsAsync(); // reload list
+            await LoadStudents(); // reload list
         }
         else
         {
