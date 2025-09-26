@@ -18,7 +18,7 @@ namespace SchoolApp.Shared.Services
         public void SetGradeLevels(List<GradeLevel> levels) => GradeLevels = levels;
         public void SetSchoolSections(List<SchoolSection> sections) => SchoolSections = sections;
 
-        // 🔑 Fire OnContextChanged when IDs change
+        //Fire OnContextChanged when IDs change
         public void UpdateSchoolYear(Guid? id)
         {
             SelectedSchoolYearId = id;
@@ -54,6 +54,19 @@ namespace SchoolApp.Shared.Services
             var ss = SchoolSections.FirstOrDefault(s => s.Id == SelectedSchoolSectionId);
             return ss?.SectionName ?? "No section selected";
         }
+        public DateTime? GetSelectedSchoolYearStart()
+        {
+            var sy = SchoolYears.FirstOrDefault(y => y.Id == SelectedSchoolYearId);
+            return sy?.StartDate;
+        }
+
+        public DateTime? GetSelectedSchoolYearEnd()
+        {
+            var sy = SchoolYears.FirstOrDefault(y => y.Id == SelectedSchoolYearId);
+            return sy?.EndDate;
+        }
+
+
 
         public event Action? OnShowSchoolYearModal;
         public event Action? OnShowGradeLevelModal;

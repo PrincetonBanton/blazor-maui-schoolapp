@@ -17,11 +17,11 @@ else if (!students.Any())
 }
 else
 {
-    <div class="row mb-3">
+@*     <div class="row mb-3">
         <div class="col-6">
-            @* <div>School Year: @SchoolContext.SelectedSchoolYearId</div> *@
-            @* <div>Grade Level: @SchoolContext.SelectedGradeLevelId</div> *@
-            @* <div>School Section: @SchoolContext.SelectedSchoolSectionId</div> *@
+            <div>School Year: @SchoolContext.SelectedSchoolYearId</div>
+            <div>Grade Level: @SchoolContext.SelectedGradeLevelId</div>
+            <div>School Section: @SchoolContext.SelectedSchoolSectionId</div>
             <div>School Year: @SchoolContext.GetSelectedSchoolYearName()</div>
             <div>Grade Level: @SchoolContext.GetSelectedGradeLevelName()</div>
             <div>School Section: @SchoolContext.GetSelectedSchoolSectionName()</div>
@@ -33,6 +33,14 @@ else
                 +
             </button>
         </div>
+    </div> *@
+
+    <div class="col-6 mb-3">
+        <button class="btn btn-primary rounded-circle"
+                style="width: 50px; height: 50px; font-size: larger;"
+                @onclick="ShowStudentModal">
+            +
+        </button>
     </div>
 
     <table class="table table-striped">
@@ -110,13 +118,21 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        SchoolContext.OnContextChanged += async () =>
-        {
-            await LoadStudents();
-            StateHasChanged();
-        };
-                await LoadStudents();
+        SchoolContext.OnContextChanged += OnContextChanged;
+        await LoadStudents();
     }
+
+    private async void OnContextChanged()
+    {
+        await LoadStudents();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        SchoolContext.OnContextChanged -= OnContextChanged;
+    }
+
 
     private async Task LoadStudents()
     {

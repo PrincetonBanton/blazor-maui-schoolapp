@@ -18,45 +18,32 @@ else if (!subjects.Any())
 else
 {
 
-    <div class="row mb-3">
+@*     <div class="row mb-3">
         <div class="col-6">
-            @* <div>School Year: @SchoolContext.SelectedSchoolYearId</div> *@
-            @* <div>Grade Level: @SchoolContext.SelectedGradeLevelId</div> *@
-            @* <div>School Section: @SchoolContext.SelectedSchoolSectionId</div> *@
+            <div>School Year: @SchoolContext.SelectedSchoolYearId</div>
+            <div>Grade Level: @SchoolContext.SelectedGradeLevelId</div>
+            <div>School Section: @SchoolContext.SelectedSchoolSectionId</div>
             <div>School Year: @SchoolContext.GetSelectedSchoolYearName()</div>
             <div>Grade Level: @SchoolContext.GetSelectedGradeLevelName()</div>
             <div>School Section: @SchoolContext.GetSelectedSchoolSectionName()</div>
         </div>
-        <div class="col-6 d-flex justify-content-end align-items-end">
+        <div class="col-6 d-flex justify-content-end align-items-start">
             <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
                     style="width: 50px; height: 50px; font-size:larger"
                     @onclick="ShowAddSubjectModal">
                 +
             </button>
         </div>
+    </div> *@
+
+    <div class="col-6 mb-3">
+        <button class="btn btn-primary rounded-circle"
+                style="width: 50px; height: 50px; font-size: larger;"
+                @onclick="ShowAddSubjectModal">
+            +
+        </button>
     </div>
 
-    @if (ShowModal)
-    {
-        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">Add New Subject</h5>
-                        <button type="button" class="btn-close" @onclick="HideAddSubjectModal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="text" class="form-control mb-3" placeholder="New Subject Name"
-                               @bind="NewSubjectName" />
-                    </div>
-                    <div >
-                        <button class="btn btn-secondary" style="width:150px" @onclick ="HideAddSubjectModal">Cancel</button>
-                        <button class="btn btn-primary" style="width:150px" @onclick=" AddSubject">Save</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
     <table class="table table-striped">
         <tbody>
             @{
@@ -98,6 +85,28 @@ else
 
         </tbody>
     </table>
+
+    @if (ShowModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Add New Subject</h5>
+                        <button type="button" class="btn-close" @onclick="HideAddSubjectModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" class="form-control mb-3" placeholder="New Subject Name"
+                               @bind="NewSubjectName" />
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" style="width:150px" @onclick="HideAddSubjectModal">Cancel</button>
+                        <button class="btn btn-primary" style="width:150px" @onclick=" AddSubject">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -107,13 +116,19 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        SchoolContext.OnContextChanged += async () =>
-        {
-            await LoadSubjects();
-            StateHasChanged();
-        };
-
+        SchoolContext.OnContextChanged += OnContextChanged;
         await LoadSubjects();
+    }
+
+    private async void OnContextChanged()
+    {
+        await LoadSubjects();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        SchoolContext.OnContextChanged -= OnContextChanged;
     }
 
 
@@ -180,8 +195,9 @@ else
         }
     }
 
-    private void ShowAddSubjectModal() => ShowModal = true;  // <-- added
-    private void HideAddSubjectModal() => ShowModal = false; // <-- added
+    private void ShowAddSubjectModal() => ShowModal = true; 
+    private void HideAddSubjectModal() => ShowModal = false; 
+
     //JS.InvokeVoidAsync("alert", $"subcount: {component}");
     //var json = JsonSerializer.Serialize(component, new JsonSerializerOptions { WriteIndented = true });
     //JS.InvokeVoidAsync("alert", json);
