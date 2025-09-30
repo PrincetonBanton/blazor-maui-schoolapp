@@ -83,16 +83,10 @@ else
     protected override async Task OnInitializedAsync()
     {
         SchoolContext.OnContextChanged += OnContextChanged;
-        await LoadStudentsAsync();
-
-        foreach (var s in Students ?? new())
-        {
-            if (!AttendanceMap.ContainsKey(s.Id))
-                AttendanceMap[s.Id] = true;
-        }
     }
 
-    protected override void OnParametersSet()
+
+    protected override async Task OnParametersSetAsync()
     {
         if (DateTime.TryParseExact(dateString, "ddMMyyyy", null,
             System.Globalization.DateTimeStyles.None, out var parsedDate))
@@ -103,15 +97,18 @@ else
         {
             SelectedDate = DateTime.Today;
         }
+
+        await LoadStudentsAndAttendanceAsync();
     }
 
-    private async Task LoadStudentsAsync()
+  
+    private async Task LoadStudentsAndAttendanceAsync()
     {
         try
         {
             if (!SchoolContext.SelectedSchoolSectionId.HasValue)
             {
-                Students = new(); // no section selected
+                Students = new();
                 return;
             }
 
@@ -119,20 +116,32 @@ else
             Students = allStudents
                 .Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
                 .ToList();
+
+            // 2. Load saved attendance for this section + date
+            var attendanceRecords = await Http.GetFromJsonAsync<List<Attendance>>(
+                $"api/attendance/{SchoolContext.SelectedSchoolSectionId}/{SelectedDate:yyyy-MM-dd}"
+            ) ?? new();
+
+            // 3. Fill the map with either saved or default (Present)
+            AttendanceMap.Clear();
+            foreach (var student in Students)
+            {
+                var record = attendanceRecords.FirstOrDefault(r => r.StudentId == student.Id);
+                AttendanceMap[student.Id] = record?.IsPresent ?? true;
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading students: {ex.Message}");
-            await JS.InvokeVoidAsync("alert", "Failed to load students.");
+            Console.WriteLine($"Error loading students/attendance: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Failed to load attendance.");
         }
     }
 
     private async void OnContextChanged()
     {
-        await LoadStudentsAsync();
+        await LoadStudentsAndAttendanceAsync();
         StateHasChanged();
     }
-
     public void Dispose()
     {
         SchoolContext.OnContextChanged -= OnContextChanged;
@@ -151,30 +160,37 @@ else
             return;
         }
 
-        // Separate present and absent students
-        var presentStudents = Students
-            .Where(s => AttendanceMap.TryGetValue(s.Id, out var p) ? p : true)
-            .ToList();
+        var records = Students.Select(s => new Attendance
+        {
+            Id = Guid.NewGuid(),
+            StudentId = s.Id,
+            SchoolSectionId = SchoolContext.SelectedSchoolSectionId!.Value,
+            GradeLevelId = SchoolContext.SelectedGradeLevelId!.Value,
+            SchoolYearId = SchoolContext.SelectedSchoolYearId!.Value,
+            AttendanceDate = SelectedDate,
+            IsPresent = AttendanceMap.TryGetValue(s.Id, out var p) ? p : true,
+            Remarks = "Trial",
+            CreatedAt = DateTime.Now 
+        }).ToList();
 
-        var absentStudents = Students
-            .Where(s => AttendanceMap.TryGetValue(s.Id, out var p) ? !p : false)
-            .ToList();
 
-        // Build messages
-        var presentMessage = presentStudents.Any()
-            ? string.Join("\\n", presentStudents.Select(s =>
-                $"ID: {s.Id} - {s.LastName}, {s.FirstName} {s.MiddleName}".Trim()))
-            : "None";
+        var json = System.Text.Json.JsonSerializer.Serialize( records,
+             new System.Text.Json.JsonSerializerOptions { WriteIndented = true }
+);
+        await JS.InvokeVoidAsync("alert", json);
 
-        var absentMessage = absentStudents.Any()
-            ? string.Join("\\n", absentStudents.Select(s =>
-                $"ID: {s.Id} - {s.LastName}, {s.FirstName} {s.MiddleName}".Trim()))
-            : "None";
+        var response = await Http.PostAsJsonAsync("api/attendance", records);
 
-        // Show alerts separately
-        await JS.InvokeVoidAsync("alert", $"Present Students on {SelectedDate:MMMM dd, yyyy}:\n{presentMessage}");
-        await JS.InvokeVoidAsync("alert", $"Absent Students on {SelectedDate:MMMM dd, yyyy}:\n{absentMessage}");
+        if (response.IsSuccessStatusCode)
+        {
+            await JS.InvokeVoidAsync("alert", $"Saved {records.Count} attendance records for {SelectedDate:MMMM dd, yyyy}.");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Failed to save attendance.");
+        }
     }
+
 
 
 }
