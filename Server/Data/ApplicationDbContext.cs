@@ -23,5 +23,6 @@ namespace SchoolApp.Server.Data
         public DbSet<SchoolYear> SchoolYears { get; set; }
         public DbSet<GradeLevel> GradeLevels { get; set; }
         public DbSet<SchoolSection> SchoolSections { get; set; }
+        public DbSet<Attendance> Attendances { get; set; }
     }
 }

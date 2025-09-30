@@ -12,29 +12,12 @@
     <LoadingSpinner />
 }
 else if (!students.Any())
-{
-    <p>No students found.</p>
+{   <div class="alert alert-warning mt-3">
+        No students found.
+    </div>
 }
 else
 {
-@*     <div class="row mb-3">
-        <div class="col-6">
-            <div>School Year: @SchoolContext.SelectedSchoolYearId</div>
-            <div>Grade Level: @SchoolContext.SelectedGradeLevelId</div>
-            <div>School Section: @SchoolContext.SelectedSchoolSectionId</div>
-            <div>School Year: @SchoolContext.GetSelectedSchoolYearName()</div>
-            <div>Grade Level: @SchoolContext.GetSelectedGradeLevelName()</div>
-            <div>School Section: @SchoolContext.GetSelectedSchoolSectionName()</div>
-        </div>
-        <div class="col-6 d-flex justify-content-end align-items-end">
-            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
-                    style="width: 50px; height: 50px; font-size:larger"
-                    @onclick="ShowStudentModal">
-                +
-            </button>
-        </div>
-    </div> *@
-
     <div class="col-6 mb-3">
         <button class="btn btn-primary rounded-circle"
                 style="width: 50px; height: 50px; font-size: larger;"

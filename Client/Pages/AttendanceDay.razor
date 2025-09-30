@@ -2,11 +2,26 @@
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 @using SchoolApp.Shared.Models
 
-@if (Students.Count == 0)
+<SchoolContextSelector />
+
+@if (!SchoolContext.SelectedSchoolSectionId.HasValue)
+{
+    <div class="alert alert-warning mt-3">
+        Please select a School Section to record attendance.
+    </div>
+}
+else if (Students == null)
 {
     <LoadingSpinner />
+}
+else if (Students.Count == 0)
+{
+    <div class="alert alert-warning mt-3">
+        No students found for this section.
+    </div>
 }
 else
 {
@@ -23,7 +38,6 @@ else
                 style="color:@(SelectedDate.DayOfWeek == DayOfWeek.Sunday ? "red" : "black")">
                 @SelectedDate.ToString("dddd")
             </h4>
-
         </div>
     </div>
 
@@ -45,11 +59,11 @@ else
                     </td>
                     <td class="text-center">
                         <input type="radio" name="att-@student.Id" checked="@isPresent"
-                            @onchange="@(() => SetAttendance(student.Id, true))" />
+                               @onchange="@(() => SetAttendance(student.Id, true))" />
                     </td>
                     <td class="text-center">
                         <input type="radio" name="att-@student.Id" checked="@(!isPresent)"
-                            @onchange="@(() => SetAttendance(student.Id, false))" />
+                               @onchange="@(() => SetAttendance(student.Id, false))" />
                     </td>
                 </tr>
             }
@@ -59,37 +73,19 @@ else
     <button class="btn btn-primary" @onclick="SaveAttendanceAsync">Save Attendance</button>
 }
 
-<style>
-    .calendar-day-card {
-        max-width: 200px;
-        margin: 0 auto;
-        border: 1px solid #ccc;
-        border-radius: 10px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-        .calendar-day-card .display-4 {
-            font-size: 3rem;
-            font-weight: bold;
-            color: #007bff;
-        }
-
-</style>
-
 @code {
     [Parameter] public string dateString { get; set; } = string.Empty;
 
     private DateTime SelectedDate { get; set; }
-    private List<Student> Students { get; set; } = new();
-
-    // Local UI state: studentId => present?
+    private List<Student>? Students { get; set; }  // nullable to distinguish "loading"
     private readonly Dictionary<Guid, bool> AttendanceMap = new();
 
     protected override async Task OnInitializedAsync()
     {
+        SchoolContext.OnContextChanged += OnContextChanged;
         await LoadStudentsAsync();
-        // Ensure defaults to Present after load
-        foreach (var s in Students)
+
+        foreach (var s in Students ?? new())
         {
             if (!AttendanceMap.ContainsKey(s.Id))
                 AttendanceMap[s.Id] = true;
@@ -105,7 +101,7 @@ else
         }
         else
         {
-            SelectedDate = DateTime.Today; // fallback
+            SelectedDate = DateTime.Today;
         }
     }
 
@@ -113,7 +109,16 @@ else
     {
         try
         {
-            Students = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+            if (!SchoolContext.SelectedSchoolSectionId.HasValue)
+            {
+                Students = new(); // no section selected
+                return;
+            }
+
+            var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+            Students = allStudents
+                .Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
+                .ToList();
         }
         catch (Exception ex)
         {
@@ -122,24 +127,54 @@ else
         }
     }
 
+    private async void OnContextChanged()
+    {
+        await LoadStudentsAsync();
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        SchoolContext.OnContextChanged -= OnContextChanged;
+    }
+
     private void SetAttendance(Guid studentId, bool isPresent)
     {
         AttendanceMap[studentId] = isPresent;
-        // StateHasChanged() not strictly necessary here because event triggers a render
     }
 
-    // Stub: shows how you'd gather data to send to an API later
     private async Task SaveAttendanceAsync()
     {
-        var payload = Students.Select(s => new
+        if (Students == null || !Students.Any())
         {
-            StudentId = s.Id,
-            Date = SelectedDate,
-            IsPresent = AttendanceMap.TryGetValue(s.Id, out var p) ? p : true
-        }).ToList();
+            await JS.InvokeVoidAsync("alert", "No students to save attendance for.");
+            return;
+        }
 
-        // TODO: POST to your attendance endpoint, e.g.:
-        // var resp = await Http.PostAsJsonAsync("api/attendance/bulk", payload);
-        await JS.InvokeVoidAsync("alert", $"Prepared {payload.Count} attendance records for {SelectedDate:MMMM dd, yyyy}.");
+        // Separate present and absent students
+        var presentStudents = Students
+            .Where(s => AttendanceMap.TryGetValue(s.Id, out var p) ? p : true)
+            .ToList();
+
+        var absentStudents = Students
+            .Where(s => AttendanceMap.TryGetValue(s.Id, out var p) ? !p : false)
+            .ToList();
+
+        // Build messages
+        var presentMessage = presentStudents.Any()
+            ? string.Join("\\n", presentStudents.Select(s =>
+                $"ID: {s.Id} - {s.LastName}, {s.FirstName} {s.MiddleName}".Trim()))
+            : "None";
+
+        var absentMessage = absentStudents.Any()
+            ? string.Join("\\n", absentStudents.Select(s =>
+                $"ID: {s.Id} - {s.LastName}, {s.FirstName} {s.MiddleName}".Trim()))
+            : "None";
+
+        // Show alerts separately
+        await JS.InvokeVoidAsync("alert", $"Present Students on {SelectedDate:MMMM dd, yyyy}:\n{presentMessage}");
+        await JS.InvokeVoidAsync("alert", $"Absent Students on {SelectedDate:MMMM dd, yyyy}:\n{absentMessage}");
     }
+
+
 }
