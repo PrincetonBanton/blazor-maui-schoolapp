@@ -1,11 +1,12 @@
-﻿@* @page "/subject/template" *@
-@page "/subject/template/{SubjectId:guid}"
+﻿@page "/subject/template/{SubjectId:guid}"
 
-@inject NavigationManager NavigationManager
 @inject HttpClient Http
 @inject IJSRuntime JS
-@using System.Text.Json;
+@using System.Text.Json
 @using SchoolApp.Shared.Models
+@using SchoolApp.Client.Helpers
+@inject NavigationManager NavigationManager
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
 @if (Subject == null)
 {
@@ -13,6 +14,17 @@
 }
 else
 {
+@*     <div class="d-flex align-items-center">
+        <select class="form-select me-2" style="width: 300px;" @onchange="OnSubjectChanged">
+            <option value="">-- Choose Subject --</option>
+            @foreach (var subject in Subjects)
+            {
+                <option value="@subject.Id">@subject.Name</option>
+            }
+        </select>
+    </div> *@
+
+
     <h4>@Subject.Name</h4>
     @if (Subject.Components != null && Subject.Components.Any())
     {
@@ -52,7 +64,7 @@ else
                                 {
                                     var loopGrading = gradingPeriod;
                                     var subWithItems = SubGradingItems.SingleOrDefault(
-                                        g => g.SubjectId == SubjectId && g.SubcomponentId == comSub.Id && g.GradingPeriod == loopGrading);
+                                        g => g.SubjectId == SelectedSubjectId && g.SubcomponentId == comSub.Id && g.GradingPeriod == loopGrading);
 
                                     int subItems = subWithItems?.ItemCount ?? 0;
                                     Guid? subGradingItemId = subWithItems?.Id;
@@ -66,16 +78,16 @@ else
                                         }
                                         else
                                         {
-                                        <div class="d-inline-flex align-items-center" style="gap: 10px;">
-                                            <div style="display:inline-block; border:1px solid #ccc; border-radius:4px; padding:4px 8px; min-width:100px; text-align:center; cursor:pointer;"
-                                                @onclick="() => OpenGradeEditModal(SubjectId, comSub.Id, loopGrading, subItems, subGradingItemId)">
-                                                @subItems
+                                            <div class="d-inline-flex align-items-center" style="gap: 10px;">
+                                                <div style="display:inline-block; border:1px solid #ccc; border-radius:4px; padding:4px 8px; min-width:100px; text-align:center; cursor:pointer;"
+                                                     @onclick="() => OpenGradeEditModal(SelectedSubjectId.Value, comSub.Id, loopGrading, subItems, subGradingItemId)">
+                                                    @subItems
+                                                </div>
+                                                <button class="btn btn-warning btn-sm"
+                                                        @onclick="() => NavigateToItemResult(subGradingItemId)">
+                                                    Scores
+                                                </button>
                                             </div>
-                                            <button class="btn btn-warning btn-sm"
-                                                @onclick="() => NavigateToItemResult(subGradingItemId)">
-                                                Scores
-                                            </button>
-                                        </div>
                                         }
                                     </td>
                                 }
@@ -123,9 +135,18 @@ else
 
 @code {
     [Parameter] public Guid SubjectId { get; set; }
+
     private Subject? Subject;
-    private List<SubGradingItem> SubGradingItems { get; set; } = new List<SubGradingItem>();
-    
+    private List<Subject> Subjects = new();
+    private List<SubGradingItem> SubGradingItems { get; set; } = new();
+
+    private Guid? _selectedSubjectId;
+    private Guid? SelectedSubjectId
+    {
+        get => _selectedSubjectId;
+        set => OnSelectedSubjectChanged(value);
+    }
+
     private bool ShowGradeInputModal = false;
     private Guid ModalSubcomponentId { get; set; }
     private Guid? ModalSubGradingItemId { get; set; }
@@ -135,16 +156,84 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
-        await LoadExistingItems();
+        await LoadSubjects();
+
+        if (SubjectId != Guid.Empty)
+        {
+            _selectedSubjectId = SubjectId;
+            await LoadSubjectAndItems(SubjectId);
+        }
     }
 
-    private async Task LoadExistingItems()
+    private async Task LoadSubjects()
+    {
+        try
+        {
+            var allSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+
+            if (SchoolContext.SelectedGradeLevelId.HasValue)
+            {
+                Subjects = allSubjects
+                    .Where(s => s.GradeLevelId == SchoolContext.SelectedGradeLevelId.Value && s.IsValidated)
+                    .ToList();
+            }
+            else
+            {
+                Subjects = new();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error loading subjects: {ex.Message}");
+        }
+    }
+
+    private async Task OnSubjectChanged(ChangeEventArgs e)
+    {
+        if (SelectedSubjectId.HasValue)
+        {
+            NavigationManager.NavigateTo($"/subject/template/{SelectedSubjectId.Value}");
+            await LoadSubjectAndItems(SelectedSubjectId.Value);
+        }
+        else
+        {
+            Subject = null;
+            SubGradingItems.Clear();
+        }
+    }
+
+    private async Task OnSelectedSubjectChanged(Guid? value)
+    {
+        _selectedSubjectId = value;
+
+        if (_selectedSubjectId.HasValue && _selectedSubjectId.Value != Guid.Empty)
+        {
+            if (_selectedSubjectId.Value != SubjectId)
+            {
+                NavigationManager.NavigateTo($"/subject/template/{_selectedSubjectId.Value}");
+            }
+
+            await LoadSubjectAndItems(_selectedSubjectId.Value);
+        }
+        else
+        {
+            Subject = null;
+            SubGradingItems.Clear();
+        }
+    }
+
+    private async Task LoadSubjectAndItems(Guid subjectId)
+    {
+        Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{subjectId}");
+        await LoadExistingItems(subjectId);
+    }
+
+    private async Task LoadExistingItems(Guid subjectId)
     {
         SubGradingItems.Clear(); 
         try
         {
-            var items = await Http.GetFromJsonAsync<List<SubGradingItem>>($"api/SubGradingItem/by-subject/{SubjectId}");
+            var items = await Http.GetFromJsonAsync<List<SubGradingItem>>($"api/SubGradingItem/by-subject/{subjectId}");
             if (items != null)
             {
                 SubGradingItems.AddRange(items); 
@@ -162,7 +251,7 @@ else
         ModalSubcomponentName = subcomponentName;
         ModalGradingPeriod = gradingPeriod;
         ModalItemCount = currentItemCount;
-        ModalSubGradingItemId = null; // Ensure this is null when saving a new entry
+        ModalSubGradingItemId = null;
         ShowGradeInputModal = true;
     }
 
@@ -184,9 +273,10 @@ else
     private async Task HandleGradeSave()
     {
         ShowGradeInputModal = false; 
+
         var subGradingItem = new SubGradingItem
         {
-            SubjectId = SubjectId,
+            SubjectId = SelectedSubjectId!.Value,
             SubcomponentId = ModalSubcomponentId,
             GradingPeriod = ModalGradingPeriod,
             ItemCount = ModalItemCount
@@ -198,7 +288,7 @@ else
 
             if (ModalSubGradingItemId.HasValue && ModalSubGradingItemId.Value != Guid.Empty)
             {
-                subGradingItem.Id = ModalSubGradingItemId.Value; // Assign the existing ID
+                subGradingItem.Id = ModalSubGradingItemId.Value;
                 response = await Http.PutAsJsonAsync($"api/SubGradingItem/{subGradingItem.Id}", subGradingItem);
             }
             else
@@ -210,7 +300,6 @@ else
             {
                 if (ModalSubGradingItemId.HasValue && ModalSubGradingItemId.Value != Guid.Empty)
                 {
-                    // If it was an edit, find the existing item in the local list and update its ItemCount
                     var existing = SubGradingItems.FirstOrDefault(sgi => sgi.Id == ModalSubGradingItemId.Value);
                     if (existing != null)
                     {
@@ -252,5 +341,4 @@ else
             JS.InvokeVoidAsync("alert", "Cannot input results: No valid SubjectGradingItem ID found.");
         }
     }
-
 }

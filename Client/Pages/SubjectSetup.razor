@@ -6,8 +6,19 @@
 @using System.Text.Json
 @using SchoolApp.Shared.Models
 @using SchoolApp.Client.Helpers
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
 <div class="mb-3">
+    <div class="d-flex align-items-center">
+        <select class="form-select me-2" style="width: 300px;" @onchange="OnSubjectChanged">
+            <option value="">-- Choose Subject --</option>
+            @foreach (var subject in Subjects)
+            {
+                <option value="@subject.Id">@subject.Name</option>
+            }
+        </select>
+    </div>
+
     @if (SelectedSubjectId != null)
     {
         @if (ShowAddComponentModal)
@@ -58,16 +69,6 @@
         }
 
     }
-
-    <div class="d-flex align-items-center">
-        <select class="form-select me-2" style="width: 300px;" @onchange="OnSubjectChanged">
-            <option value="">-- Choose Subject --</option>
-            @foreach (var subject in Subjects)
-            {
-                <option value="@subject.Id">@subject.Name</option>
-            }
-        </select>
-    </div>
 </div>
 
 @if (Components.Any())
@@ -244,7 +245,18 @@ else
     {
         try
         {
-            Subjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+            var allSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+
+            if (SchoolContext.SelectedGradeLevelId.HasValue)
+            {
+                Subjects = allSubjects
+                    .Where(s => s.GradeLevelId == SchoolContext.SelectedGradeLevelId.Value && !s.IsValidated)
+                    .ToList();
+            }
+            else
+            {
+                Subjects = new();
+            }
         }
         catch (Exception ex)
         {
