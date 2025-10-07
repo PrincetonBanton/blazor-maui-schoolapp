@@ -120,8 +120,19 @@
         {
             SchoolContext.UpdateGradeLevel(id);
             await LoadSchoolSection();
+
+            if (SchoolSections.Any())
+            {
+                var defaultSectionId = SchoolSections.First().Id;
+                SchoolContext.UpdateSchoolSection(defaultSectionId); 
+            }
+            else
+            {
+                SchoolContext.UpdateSchoolSection(null);
+            }
         }
     }
+
 
     private Task OnSchoolSectionChanged(ChangeEventArgs e)
     {

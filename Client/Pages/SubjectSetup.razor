@@ -8,8 +8,7 @@
 @using SchoolApp.Client.Helpers
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-<div class="mb-3">
-    <div class="d-flex align-items-center">
+    <div class="d-flex align-items-center mb-3">
         <select class="form-select me-2" style="width: 300px;" @onchange="OnSubjectChanged">
             <option value="">-- Choose Subject --</option>
             @foreach (var subject in Subjects)
@@ -69,7 +68,6 @@
         }
 
     }
-</div>
 
 @if (Components.Any())
 {
@@ -237,7 +235,7 @@ else
         {
             SelectedSubjectId = SubjectId;
             var subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
-            await LoadComponents(); // Load components for this subject
+            await LoadComponents();
         }
     }
 

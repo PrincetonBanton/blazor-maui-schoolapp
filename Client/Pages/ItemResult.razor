@@ -5,6 +5,7 @@
 @using System.Text.Json;
 @using SchoolApp.Shared.Models
 @inject NavigationManager NavigationManager
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
 @if (SubGradingItem == null)
 {
@@ -90,7 +91,19 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Students = await Http.GetFromJsonAsync<List<Student>>("api/student");
+
+       var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+
+        if (SchoolContext.SelectedSchoolSectionId.HasValue)
+        {
+            Students = allStudents
+                .Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
+                .ToList();
+        }
+        else
+        {
+            Students = new(); // No section selected → no students loaded
+        }
 
         if (SubGradingItemId == Guid.Empty)
         {

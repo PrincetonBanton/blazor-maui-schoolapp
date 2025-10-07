@@ -1,4 +1,5 @@
-﻿@page "/subject/template/{SubjectId:guid}"
+﻿@page "/subject/template"
+@page "/subject/template/{SubjectId:guid}"
 
 @inject HttpClient Http
 @inject IJSRuntime JS
@@ -14,7 +15,7 @@
 }
 else
 {
-@*     <div class="d-flex align-items-center">
+    <div class="d-flex align-items-center mb-3">
         <select class="form-select me-2" style="width: 300px;" @onchange="OnSubjectChanged">
             <option value="">-- Choose Subject --</option>
             @foreach (var subject in Subjects)
@@ -22,10 +23,8 @@ else
                 <option value="@subject.Id">@subject.Name</option>
             }
         </select>
-    </div> *@
+    </div>
 
-
-    <h4>@Subject.Name</h4>
     @if (Subject.Components != null && Subject.Components.Any())
     {
         <table class="table table-bordered">
@@ -134,18 +133,15 @@ else
 }
 
 @code {
-    [Parameter] public Guid SubjectId { get; set; }
+    [Parameter] 
+    public Guid SubjectId { get; set; }
+    private Guid? SelectedSubjectId;
 
     private Subject? Subject;
     private List<Subject> Subjects = new();
+
     private List<SubGradingItem> SubGradingItems { get; set; } = new();
 
-    private Guid? _selectedSubjectId;
-    private Guid? SelectedSubjectId
-    {
-        get => _selectedSubjectId;
-        set => OnSelectedSubjectChanged(value);
-    }
 
     private bool ShowGradeInputModal = false;
     private Guid ModalSubcomponentId { get; set; }
@@ -157,10 +153,10 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadSubjects();
-
-        if (SubjectId != Guid.Empty)
+        if (SubjectId != null && SubjectId != Guid.Empty)
         {
-            _selectedSubjectId = SubjectId;
+            SelectedSubjectId = SubjectId;
+            var subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
             await LoadSubjectAndItems(SubjectId);
         }
     }
@@ -190,35 +186,25 @@ else
 
     private async Task OnSubjectChanged(ChangeEventArgs e)
     {
-        if (SelectedSubjectId.HasValue)
+        try
         {
-            NavigationManager.NavigateTo($"/subject/template/{SelectedSubjectId.Value}");
-            await LoadSubjectAndItems(SelectedSubjectId.Value);
-        }
-        else
-        {
-            Subject = null;
-            SubGradingItems.Clear();
-        }
-    }
-
-    private async Task OnSelectedSubjectChanged(Guid? value)
-    {
-        _selectedSubjectId = value;
-
-        if (_selectedSubjectId.HasValue && _selectedSubjectId.Value != Guid.Empty)
-        {
-            if (_selectedSubjectId.Value != SubjectId)
+            var value = e?.Value?.ToString();
+            if (Guid.TryParse(value, out var subjectId))
             {
-                NavigationManager.NavigateTo($"/subject/template/{_selectedSubjectId.Value}");
+                SelectedSubjectId = subjectId;
+                await LoadSubjectAndItems(subjectId); 
             }
-
-            await LoadSubjectAndItems(_selectedSubjectId.Value);
+            else
+            {
+                SelectedSubjectId = null;
+                Subject = null;
+                SubGradingItems.Clear();
+                await JS.InvokeVoidAsync("alert", "Invalid subject selected.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Subject = null;
-            SubGradingItems.Clear();
+            await JS.InvokeVoidAsync("alert", $"Error fetching components: {ex.Message}");
         }
     }
 
