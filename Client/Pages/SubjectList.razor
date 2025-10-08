@@ -19,25 +19,6 @@ else if (!subjects.Any())
 }
 else
 {
-
-@*     <div class="row mb-3">
-        <div class="col-6">
-            <div>School Year: @SchoolContext.SelectedSchoolYearId</div>
-            <div>Grade Level: @SchoolContext.SelectedGradeLevelId</div>
-            <div>School Section: @SchoolContext.SelectedSchoolSectionId</div>
-            <div>School Year: @SchoolContext.GetSelectedSchoolYearName()</div>
-            <div>Grade Level: @SchoolContext.GetSelectedGradeLevelName()</div>
-            <div>School Section: @SchoolContext.GetSelectedSchoolSectionName()</div>
-        </div>
-        <div class="col-6 d-flex justify-content-end align-items-start">
-            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
-                    style="width: 50px; height: 50px; font-size:larger"
-                    @onclick="ShowAddSubjectModal">
-                +
-            </button>
-        </div>
-    </div> *@
-
     <div class="col-6 mb-3">
         <button class="btn btn-primary rounded-circle"
                 style="width: 50px; height: 50px; font-size: larger;"
@@ -90,7 +71,7 @@ else
 
     @if (ShowModal)
     {
-        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal d-block" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
@@ -98,10 +79,16 @@ else
                         <button type="button" class="btn-close" @onclick="HideAddSubjectModal"></button>
                     </div>
                     <div class="modal-body">
+                        <div class="mb-3">
+                            <div class="alert alert-info p-2 mb-2">
+                                <strong>@SchoolContext.GetSelectedGradeLevelName()</strong>
+                                <small>ID: @(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
+                            </div>
+                        </div>
                         <input type="text" class="form-control mb-3" placeholder="New Subject Name"
                                @bind="NewSubjectName" />
                     </div>
-                    <div>
+                    <div class="modal-footer">
                         <button class="btn btn-secondary" style="width:150px" @onclick="HideAddSubjectModal">Cancel</button>
                         <button class="btn btn-primary" style="width:150px" @onclick=" AddSubject">Save</button>
                     </div>
@@ -175,7 +162,11 @@ else
         var confirm = await JS.InvokeAsync<bool>("confirm", $"Add subject '{NewSubjectName}'?");
         if (!confirm) return;
 
-        var newSubject = new Subject { Name = NewSubjectName };
+        var newSubject = new Subject
+        {
+            Name = NewSubjectName,
+            GradeLevelId = SchoolContext.SelectedGradeLevelId 
+        }; 
 
         try
         {
