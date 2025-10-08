@@ -47,14 +47,6 @@ public class StudentController : ControllerBase
         return Ok(student);
     }
 
-    //[HttpPost]
-    //public async Task<ActionResult<Student>> PostStudent(Student student)
-    //{
-    //    _context.Students.Add(student);
-    //    await _context.SaveChangesAsync();
-    //    return CreatedAtAction(nameof(GetStudent), new { id = student.Id }, student);
-    //}
-
     // PUT: api/Student/{id}
     [HttpPut("{id}")]
     public IActionResult UpdateStudent(Guid id, Student updatedStudent)

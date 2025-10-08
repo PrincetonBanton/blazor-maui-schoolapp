@@ -12,7 +12,8 @@
     <LoadingSpinner />
 }
 else if (!students.Any())
-{   <div class="alert alert-warning mt-3">
+{
+    <div class="alert alert-warning mt-3">
         No students found.
     </div>
 }
@@ -48,7 +49,7 @@ else
                         <td>@student.ContactNumber</td>
                         <td>
                             <div class="d-flex gap-3">
-                                <button class="btn btn-sm btn-warning" style="width:80px;" disabled>Edit</button>
+                                <button class="btn btn-sm btn-warning" style="width:80px;" @onclick="() => EditStudent(student)">Edit</button>
                                 <button class="btn btn-sm btn-danger" style="width:80px;" disabled>Delete</button>
                                 <a class="btn btn-sm btn-primary" style="width:150px;" href="@($"/students/card/{student.Id}")">View Card</a>
                             </div>
@@ -67,12 +68,12 @@ else
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Add Student</h5>
+                    <h5 class="modal-title">@((IsEditMode ? "Edit Student" : "Add Student"))</h5>
                     <button type="button" class="btn-close" @onclick="HideStudentModal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <div class="alert alert-info p-2 mb-2">
+                        <div class="alert alert-info d-flex align-items-center justify-content-between p-3 mb-3 border" style="min-height: 50px;">
                             <strong>@SchoolContext.GetSelectedSchoolSectionName()</strong>
                             <small>ID: @(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
                         </div>
@@ -93,7 +94,7 @@ else
 
                 <div class="modal-footer">
                     <button class="btn btn-secondary" style="width:150px;" @onclick="HideStudentModal">Cancel</button>
-                    <button class="btn btn-primary" style="width:150px;" @onclick="SaveStudentAsync">Save</button>
+                    <button class="btn btn-primary" style="width:150px;" @onclick="SaveStudentAsync">@(IsEditMode ? "Update" : "Save")</button>
                 </div>
             </div>
         </div>
@@ -104,7 +105,7 @@ else
     private List<Student> students = new();
     private Student NewStudent = new();
     private bool ShowModal = false;
-
+    private bool IsEditMode = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -123,7 +124,6 @@ else
         SchoolContext.OnContextChanged -= OnContextChanged;
     }
 
-
     private async Task LoadStudents()
     {
         try
@@ -138,24 +138,43 @@ else
             }
             else
             {
-                students = new(); // No grade level selected → no subjects
+                students = new();
             }
         }
-        catch (Exception ex)
+        catch
         {
             await JS.InvokeVoidAsync("alert", "Failed to load students.");
         }
-
     }
 
-private void ShowStudentModal()
-{
-    NewStudent = new Student
+    private void ShowStudentModal()
     {
-        SchoolSectionId = SchoolContext.SelectedSchoolSectionId
-    };
-    ShowModal = true;
-}
+        NewStudent = new Student
+        {
+            SchoolSectionId = SchoolContext.SelectedSchoolSectionId
+        };
+        IsEditMode = false;
+        ShowModal = true;
+    }
+
+    private void EditStudent(Student student)
+    {
+        NewStudent = new Student
+        {
+            Id = student.Id,
+            FirstName = student.FirstName,
+            MiddleName = student.MiddleName,
+            LastName = student.LastName,
+            DateOfBirth = student.DateOfBirth,
+            Gender = student.Gender,
+            Address = student.Address,
+            ContactNumber = student.ContactNumber,
+            SchoolSectionId = student.SchoolSectionId
+        };
+
+        IsEditMode = true;
+        ShowModal = true;
+    }
 
     private void HideStudentModal()
     {
@@ -164,21 +183,62 @@ private void ShowStudentModal()
 
     private async Task SaveStudentAsync()
     {
-        var json = JsonSerializer.Serialize(NewStudent, new JsonSerializerOptions { WriteIndented = true });
-        JS.InvokeVoidAsync("alert", json);
-
-        var response = await Http.PostAsJsonAsync("api/student", NewStudent);
-        if (response.IsSuccessStatusCode)
+        var errorMessage = ValidateStudent();
+        if (errorMessage != null)
         {
-            await JS.InvokeVoidAsync("alert", "Student saved!");
-            HideStudentModal();
-            await LoadStudents(); // reload list
+            await JS.InvokeVoidAsync("alert", errorMessage);
+            return;
+        }
+
+        if (IsEditMode)
+        {
+            var response = await Http.PutAsJsonAsync($"api/student/{NewStudent.Id}", NewStudent);
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Student updated!");
+                HideStudentModal();
+                await LoadStudents();
+            }
+            else
+            {
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to update student: {errorMsg}");
+            }
         }
         else
         {
-            var errorMsg = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Error: {errorMsg}");
-            await JS.InvokeVoidAsync("alert", $"Failed to save student: {errorMsg}");
+            var response = await Http.PostAsJsonAsync("api/student", NewStudent);
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Student saved!");
+                HideStudentModal();
+                await LoadStudents();
+            }
+            else
+            {
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to save student: {errorMsg}");
+            }
         }
     }
+
+    private string? ValidateStudent()
+    {
+        if (string.IsNullOrWhiteSpace(NewStudent.FirstName))
+            return "First name is required.";
+        if (string.IsNullOrWhiteSpace(NewStudent.LastName))
+            return "Last name is required.";
+        if (NewStudent.DateOfBirth == default)
+            return "Date of birth is required.";
+        if (string.IsNullOrWhiteSpace(NewStudent.Gender))
+            return "Gender is required.";
+        if (string.IsNullOrWhiteSpace(NewStudent.Address))
+            return "Address is required.";
+        if (string.IsNullOrWhiteSpace(NewStudent.ContactNumber))
+            return "Contact number is required.";
+        if (NewStudent.SchoolSectionId == null)
+            return "A school section must be selected.";
+        return null; 
+    }
+
 }
