@@ -7,15 +7,40 @@
 
 <SchoolContextSelector />
 
-@if (students == null)
+@if (!SchoolContext.SelectedSchoolYearId.HasValue)
+{
+    <div class="alert alert-warning mt-3">
+        Please select a <strong>School Year</strong> to view subjects.
+    </div>
+}
+else if (!SchoolContext.SelectedGradeLevelId.HasValue)
+{
+    <div class="alert alert-warning mt-3">
+        Please select a <strong>Grade Level</strong> to view subjects.
+    </div>
+}
+else if (!SchoolContext.SelectedSchoolSectionId.HasValue)
+{
+    <div class="alert alert-warning mt-3">
+        Please select a <strong>School Section</strong> to view subjects.
+    </div>
+}
+else if (students == null)
 {
     <LoadingSpinner />
 }
 else if (!students.Any())
 {
-    <div class="alert alert-warning mt-3">
-        No students found.
-    </div>
+    @if (SchoolContext.SelectedSchoolYearId != null &&
+         SchoolContext.SelectedGradeLevelId != null)
+    {
+        <div class="alert alert-warning mt-3 d-flex justify-content-between align-items-center">
+            <div>
+                Do you want to add a student for <strong>@SchoolContext.GetSelectedSchoolSectionName()</strong>?
+            </div>
+            <button class="btn btn-primary btn-sm" @onclick="ShowStudentModal">Yes</button>
+        </div>
+    }
 }
 else
 {
@@ -32,7 +57,9 @@ else
             @if (students.Count == 0)
             {
                 <tr>
-                    <td colspan="7" class="text-center text-muted">No student data to display yet.</td>
+                    <td colspan="7" class="text-center text-muted">
+                        No student data to display yet.
+                    </td>
                 </tr>
             }
             else
@@ -61,6 +88,7 @@ else
         </tbody>
     </table>
 }
+
 
 @if (ShowModal)
 {

@@ -7,7 +7,20 @@
 
 <SchoolContextSelector />
 
-@if (subjects == null)
+@if (!SchoolContext.SelectedSchoolYearId.HasValue)
+{
+    <div class="alert alert-warning mt-3">
+        Please select a <strong>School Year</strong> to view subjects.
+    </div>
+}
+else if (!SchoolContext.SelectedGradeLevelId.HasValue)
+{
+    <div class="alert alert-warning mt-3">
+        Please select a <strong>Grade Level</strong> to view subjects.
+    </div>
+}
+
+else if (subjects == null)
 {
     <LoadingSpinner />
 }
@@ -48,24 +61,25 @@ else
                         }
                     </td>
                     <td>
-                        @if (subject.IsValidated)
-                        {
-                            <NavLink class="btn btn-primary btn-sm" style="width:140px; height:30px;" href="@($"/subject/template/{subject.Id}")">
-                                Subject Template
-                            </NavLink>
-                        }
-                        else
-                        {
-                            <NavLink class="btn btn-warning btn-sm" style="width:140px; height:30px;" href="@($"/subject/setup/{subject.Id}")">
-                                Subject Setup
-                            </NavLink>
-
-                        }
+                        <div class="d-flex gap-3">
+                            @if (subject.IsValidated)
+                            {
+                                <NavLink class="btn btn-primary btn-sm me-1" style="width:140px; height:30px;" href="@($"/subject/template/{subject.Id}")">
+                                    Subject Template
+                                </NavLink>
+                            }
+                            else
+                            {
+                                <NavLink class="btn btn-info btn-sm me-1" style="width:140px; height:30px;" href="@($"/subject/setup/{subject.Id}")">
+                                    Subject Setup
+                                </NavLink>
+                            }
+                            <button class="btn btn-sm btn-warning" style="width:80px;" @onclick="() => EditSubject(subject)">Edit</button>
+                       </div>
                     </td>
                 </tr>
                 index++;
             }
-
         </tbody>
     </table>
 
@@ -75,8 +89,8 @@ else
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">Add New Subject</h5>
-                        <button type="button" class="btn-close" @onclick="HideAddSubjectModal"></button>
+                        <h5 class="modal-title">@((IsEditMode ? "Edit Subject" : "Add Subject"))</h5>
+                        <button type="button" class="btn-close" @onclick="HideSubjectModal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
@@ -85,12 +99,11 @@ else
                                 <small>ID: @(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
                             </div>
                         </div>
-                        <input type="text" class="form-control mb-3" placeholder="New Subject Name"
-                               @bind="NewSubjectName" />
+                        <input type="text" class="form-control mb-3" placeholder="Subject Name" @bind="NewSubjectName" />
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-secondary" style="width:150px" @onclick="HideAddSubjectModal">Cancel</button>
-                        <button class="btn btn-primary" style="width:150px" @onclick=" AddSubject">Save</button>
+                        <button class="btn btn-secondary" style="width:150px" @onclick="HideSubjectModal">Cancel</button>
+                        <button class="btn btn-primary" style="width:150px" @onclick="SaveSubjectAsync">@(IsEditMode ? "Update" : "Save")</button>
                     </div>
                 </div>
             </div>
@@ -100,6 +113,8 @@ else
 
 @code {
     private List<Subject>? subjects;
+    private Subject EditingSubject = new();
+    private bool IsEditMode = false;
     private string NewSubjectName = string.Empty;
     private bool ShowModal = false;
 
@@ -123,6 +138,12 @@ else
 
     private async Task LoadSubjects()
     {
+        if (!SchoolContext.SelectedSchoolYearId.HasValue)
+        {
+            subjects = new();
+            return;
+        }
+
         try
         {
             var allSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
@@ -135,7 +156,7 @@ else
             }
             else
             {
-                subjects = new(); // No grade level selected → no subjects
+                subjects = new();
             }
         }
         catch (Exception ex)
@@ -143,7 +164,6 @@ else
             await JS.InvokeVoidAsync("alert", $"Error loading subjects: {ex.Message}");
         }
     }
-
 
     private async Task AddSubject()
     {
@@ -188,8 +208,86 @@ else
         }
     }
 
-    private void ShowAddSubjectModal() => ShowModal = true; 
-    private void HideAddSubjectModal() => ShowModal = false; 
+    private void ShowAddSubjectModal()
+    {
+        NewSubjectName = string.Empty;
+        EditingSubject = new Subject();
+        IsEditMode = false;
+        ShowModal = true;
+    }
+
+    private void EditSubject(Subject subject)
+    {
+        EditingSubject = subject;
+        NewSubjectName = subject.Name;
+        IsEditMode = true;
+        ShowModal = true;
+    }
+
+    private void HideSubjectModal()
+    {
+        ShowModal = false;
+        IsEditMode = false;
+        NewSubjectName = string.Empty;
+        EditingSubject = new Subject();
+    }
+
+    private async Task SaveSubjectAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewSubjectName))
+        {
+            await JS.InvokeVoidAsync("alert", "Subject name cannot be empty.");
+            return;
+        }
+
+        if (IsEditMode)
+        {
+            // Update
+            EditingSubject.Name = NewSubjectName;
+
+            var response = await Http.PutAsJsonAsync($"api/subject/{EditingSubject.Id}", EditingSubject);
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Subject updated!");
+                HideSubjectModal();
+                await LoadSubjects();
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to update subject: {err}");
+            }
+        }
+        else
+        {
+            // Add new
+            if (subjects!.Any(s => s.Name.Trim().ToLower() == NewSubjectName.Trim().ToLower()))
+            {
+                await JS.InvokeVoidAsync("alert", "Subject already exists.");
+                return;
+            }
+
+            var newSubject = new Subject
+            {
+                Name = NewSubjectName,
+                GradeLevelId = SchoolContext.SelectedGradeLevelId
+            };
+
+            var response = await Http.PostAsJsonAsync("api/subject", newSubject);
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Subject added!");
+                HideSubjectModal();
+                await LoadSubjects();
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to add subject: {err}");
+            }
+        }
+    }
+
 
     //JS.InvokeVoidAsync("alert", $"subcount: {component}");
     //var json = JsonSerializer.Serialize(component, new JsonSerializerOptions { WriteIndented = true });

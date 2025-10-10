@@ -20,128 +20,194 @@
 
     @if (SelectedSubjectId != null)
     {
-        @if (ShowAddComponentModal)
-        {
-            <div class="modal-backdrop fade show" style="z-index: 1040;"></div>
-
-            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Add Component</h5>
-                            <button type="button" class="btn-close" aria-label="Close" @onclick="() => ShowAddComponentModal = false"></button>
-                        </div>
-                        <div class="modal-body">
-                            <input type="text" class="form-control mb-2" placeholder="Component Name" @bind="NewComponentName" />
-                            <input type="number" class="form-control mb-2" placeholder="% of Subject" @bind="NewComponentPercentage" />
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" style="width: 150px" @onclick="() => ShowAddComponentModal = false">Cancel</button>
+    @if (ShowAddComponentModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            @(IsEditingComponent ? "Edit Component" : "Add Component")
+                        </h5>
+                        <button type="button" class="btn-close" aria-label="Close"
+                                @onclick="CloseComponentModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="text" class="form-control mb-2" placeholder="Component Name" @bind="NewComponentName" />
+                        <input type="number" class="form-control mb-2" placeholder="% of Subject" @bind="NewComponentPercentage" />
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" style="width: 150px" @onclick="CloseComponentModal">Cancel</button>
+                        @if (IsEditingComponent)
+                        {
+                            <button class="btn btn-warning" style="width: 150px" @onclick="OnUpdateComponentClicked">Update</button>
+                        }
+                        else
+                        {
                             <button class="btn btn-success" style="width: 150px" @onclick="OnAddComponentClicked">Save</button>
-                        </div>
+                        }
+
                     </div>
                 </div>
             </div>
-        }
-        @if (ShowAddSubcomponentModal)
-        {
-            <div class="modal-backdrop fade show" style="z-index: 1040;"></div>
-
-            <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <p><strong>Adding to:</strong> @Components.FirstOrDefault(c => c.Id == SelectedComponentIdForSub)?.Name</p>
-                            <button type="button" class="btn-close" aria-label="Close" @onclick="() => ShowAddSubcomponentModal = false"></button>
-                        </div>
-                        <div class="modal-body">
-                            <input type="text" class="form-control mb-2" placeholder="Subcomponent Name" @bind="NewSubcomponentName" />
-                            <input type="number" class="form-control mb-2" placeholder="% of Component" @bind="NewSubcomponentPercentage" />
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" style="width: 150px" @onclick="() => ShowAddSubcomponentModal = false">Cancel</button>
-                            <button class="btn btn-success" style="width: 150px" @onclick="OnConfirmAddSubcomponent">Save</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-
+        </div>
     }
+
+    @if (ShowAddSubcomponentModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="z-index: 1050;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            @(IsEditingSubcomponent ? "Edit Subcomponent" : "Add Subcomponent")
+                        </h5>
+                        <button type="button" class="btn-close" aria-label="Close"
+                                @onclick="CloseSubcomponentModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Component:</strong> @Components.FirstOrDefault(c => c.Id == SelectedComponentIdForSub)?.Name</p>
+                        <input type="text" class="form-control mb-2" placeholder="Subcomponent Name" @bind="NewSubcomponentName" />
+                        <input type="number" class="form-control mb-2" placeholder="% of Component" @bind="NewSubcomponentPercentage" />
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" style="width: 150px" @onclick="CloseSubcomponentModal">Cancel</button>
+                        @if (IsEditingSubcomponent)
+                        {
+                            <button class="btn btn-warning" style="width: 150px" @onclick="OnUpdateSubcomponentClicked">Update</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-success" style="width: 150px" @onclick="OnConfirmAddSubcomponent">Save</button>
+                        }
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+ }
 
 @if (Components.Any())
 {
-    <!-- Component Table -->
     <table class="table table-bordered">
-        <thead>
+        <thead class="table-primary">
             <tr>
-                @if (Math.Round(Components.Sum(c => c.Percentage)) < 100)
-                {
-                    <th>
-                        <button class="btn btn-warning btn-sm" style="width: 200px" @onclick="() => ShowAddComponentModal = true">Component +</button>
-                    </th>
-                }
-                else
-                {
-                    <th>Component</th>
-                }
-                <th>% of Subject</th>
-                <th>Subcomponent</th>
-                <th>% of Component</th>
-                <th style="width: 120px;">Actions</th>
+                <th style="width: 25%;">
+                    @if (Math.Round(Components.Sum(c => c.Percentage)) < 100)
+                    {
+                        <button class="btn btn-primary btn-sm rounded-circle"
+                                style="width: 32px; height: 32px; padding: 0;"
+                                title="Add Component"
+                                @onclick="() => ShowAddComponentModal = true">
+                            +
+                        </button>
+                    }
+                    else
+                    {
+                        @:Component
+                    }
+                </th>
+                <th style="width: 10%;">Percent Sub</th>
+                <th style="width: 25%;">Subcomponent</th>
+                <th style="width: 10%;">Percent</th>
+                <th style="width: 30%;"></th>
             </tr>
         </thead>
         <tbody>
-            <!-- Loop through each Component -->
             @foreach (var comp in Components)
             {
-                // Calculate rowspan: if no subcomponents, rowspan = 1; otherwise, rowspan = number of subcomponents
                 var rowspan = comp.Subcomponents.Count == 0 ? 1 : comp.Subcomponents.Count;
                 var subTotal = comp.Subcomponents.Sum(s => s.Percentage);
                 bool subInvalid = Math.Round(subTotal) != 100;
                 bool compInvalid = Math.Round(Components.Sum(c => c.Percentage)) != 100;
 
                 <tr>
-                    <td rowspan="@rowspan" class="fw-bold" style="color:@(subInvalid ? "red" : "black")">@comp.Name</td>
-                    <td rowspan="@rowspan" style="color:@(compInvalid ? "red" : "black")">@comp.Percentage%</td>
+                    <!-- COMPONENT NAME + EDIT BUTTON -->
+                    <td rowspan="@rowspan" style="color:@(subInvalid ? "red" : "black")">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>@comp.Name</strong>
+                            <button class="btn btn-warning btn-sm rounded-circle"
+                                    style="width: 28px; height: 28px; padding: 0;"
+                                    title="Edit Component"
+                                    @onclick="() => EditComponent(comp)">
+                                ✏️
+                            </button>
+                        </div>
+                    </td>
 
-                    <!-- Handle display of the FIRST subcomponent (or a placeholder if none) -->
+                    <td rowspan="@rowspan" style="color:@(compInvalid ? "red" : "black")">
+                        @comp.Percentage%
+                    </td>
+
                     @if (comp.Subcomponents.Count > 0)
                     {
-                        <!-- First Subcomponent Name and Percentage -->
-                        <td>@comp.Subcomponents[0].Name</td>
+                        <!-- FIRST SUBCOMPONENT -->
+                        <td>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>@comp.Subcomponents[0].Name</span>
+                                @if (Math.Round(comp.Subcomponents.Sum(s => s.Percentage)) < 100)
+                                {
+                                    <button class="btn btn-primary btn-sm rounded-circle"
+                                            style="width: 28px; height: 28px; padding: 0;"
+                                            title="Add Subcomponent"
+                                            @onclick="() => OpenSubcomponentModal(comp.Id)">
+                                        +
+                                    </button>
+                                }
+                            </div>
+                        </td>
                         <td>@comp.Subcomponents[0].Percentage%</td>
-                        @if (Math.Round(comp.Subcomponents.Sum(s => s.Percentage)) < 100)
-                        {
-                            <td rowspan="@rowspan">
-                                <button class="btn btn-warning btn-sm" @onclick="() => OpenSubcomponentModal(comp.Id)">Sub +</button>
-                            </td>
-                        }
+                        <td>
+                            <button class="btn btn-warning btn-sm rounded-circle"
+                                    style="width: 28px; height: 28px; padding: 0;"
+                                    title="Edit Subcomponent"
+                                    @onclick="() => EditSubcomponent(comp.Subcomponents[0])">
+                                ✏️
+                            </button>
+                        </td>
                     }
                     else
                     {
-                        <!-- No subcomponents row -->
-                        <td colspan="2" class="text-center text-muted">No subcomponents</td>
-                        <td rowspan="@rowspan">
-                            <button class="btn btn-warning btn-sm" @onclick="() => OpenSubcomponentModal(comp.Id)">Sub +</button>
-                        </td>   
+                        <!-- NO SUBCOMPONENTS -->
+                        <td>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">No subcomponents</span>
+                                <button class="btn btn-primary btn-sm rounded-circle"
+                                        style="width: 28px; height: 28px; padding: 0;"
+                                        title="Add Subcomponent"
+                                        @onclick="() => OpenSubcomponentModal(comp.Id)">
+                                    +
+                                </button>
+                            </div>
+                        </td>
+                        <td>0%</td>
+                        <td></td>
                     }
                 </tr>
 
-                <!-- Loop through the REMAINING subcomponents (index 1 and onward) -->
                 @for (int i = 1; i < comp.Subcomponents.Count; i++)
                 {
+                    var sub = comp.Subcomponents[i];
                     <tr>
-                        <td>@comp.Subcomponents[i].Name</td>
-                        <td>@comp.Subcomponents[i].Percentage%</td>
+                        <td>@sub.Name</td>
+                        <td>@sub.Percentage%</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm rounded-circle"
+                                    style="width: 28px; height: 28px; padding: 0;"
+                                    title="Edit Subcomponent"
+                                    @onclick="() => EditSubcomponent(sub)">
+                                ✏️
+                            </button>
+                        </td>
                     </tr>
                 }
             }
         </tbody>
     </table>
 
-    <table class="table table-bordered w-auto">
-        <thead class="table-light">
+    <table class="table table-bordered w-auto mt-5">
+        <thead class="table-secondary">
             <tr>
                 <th>Component</th>
                 <th>Component %</th>
@@ -227,6 +293,12 @@ else
     private string ValidationMessageClass { get; set; }
     private bool IsTemplateStructureValid = false;
     private Subject SelectedSubject => Subjects.FirstOrDefault(s => s.Id == SelectedSubjectId);
+
+    private bool IsEditingComponent = false;
+    private Guid? EditingComponentId = null;
+
+    private bool IsEditingSubcomponent = false;
+    private Guid? EditingSubcomponentId = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -378,6 +450,42 @@ else
             await JS.InvokeVoidAsync("alert", $"AddComponent error: {ex.Message}");
         }
     }
+    private async Task OnUpdateComponentClicked()
+    {
+        if (EditingComponentId == null || string.IsNullOrWhiteSpace(NewComponentName) || NewComponentPercentage <= 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Please provide valid component name and percentage.");
+            return;
+        }
+
+        var updatedComponent = new Component
+        {
+            Id = EditingComponentId.Value,
+            Name = NewComponentName,
+            Percentage = NewComponentPercentage,
+            SubjectId = SelectedSubjectId.Value
+        };
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/component/{updatedComponent.Id}", updatedComponent);
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Component updated successfully.");
+                CloseComponentModal();
+                await LoadComponents();
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to update component: {err}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"UpdateComponent error: {ex.Message}");
+        }
+    }
 
 
     private async Task OnConfirmAddSubcomponent()
@@ -419,6 +527,45 @@ else
             await JS.InvokeVoidAsync("alert", $"AddSubcomponent error: {ex.Message}");
         }
     }
+
+    private async Task OnUpdateSubcomponentClicked()
+    {
+        if (EditingSubcomponentId == null || string.IsNullOrWhiteSpace(NewSubcomponentName) || NewSubcomponentPercentage <= 0)
+        {
+            await JS.InvokeVoidAsync("alert", "Please provide valid subcomponent name and percentage.");
+            return;
+        }
+
+        var updatedSub = new Subcomponent
+        {
+            Id = EditingSubcomponentId.Value,
+            Name = NewSubcomponentName,
+            Percentage = NewSubcomponentPercentage,
+            ComponentId = SelectedComponentIdForSub.Value
+        };
+
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/subcomponent/{updatedSub.Id}", updatedSub);
+            if (response.IsSuccessStatusCode)
+            {
+                await JS.InvokeVoidAsync("alert", "Subcomponent updated successfully.");
+                CloseSubcomponentModal();
+                await LoadComponents();
+            }
+            else
+            {
+                var err = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to update subcomponent: {err}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"UpdateSubcomponent error: {ex.Message}");
+        }
+    }
+
+
     private async Task OnFinalValidateClicked()
     {
         if (SelectedSubjectId == null)
@@ -448,6 +595,43 @@ else
         {
             await JS.InvokeVoidAsync("alert", $"Error validating template: {ex.Message}");
         }
+    }
+
+    private void CloseComponentModal()
+    {
+        ShowAddComponentModal = false;
+        IsEditingComponent = false;
+        EditingComponentId = null;
+        NewComponentName = string.Empty;
+        NewComponentPercentage = 0;
+    }
+
+    private void CloseSubcomponentModal()
+    {
+        ShowAddSubcomponentModal = false;
+        IsEditingSubcomponent = false;
+        EditingSubcomponentId = null;
+        NewSubcomponentName = string.Empty;
+        NewSubcomponentPercentage = 0;
+    }
+
+    private void EditComponent(Component comp)
+    {
+        IsEditingComponent = true;
+        EditingComponentId = comp.Id;
+        NewComponentName = comp.Name;
+        NewComponentPercentage = comp.Percentage;
+        ShowAddComponentModal = true;
+    }
+
+    private void EditSubcomponent(Subcomponent sub)
+    {
+        IsEditingSubcomponent = true;
+        EditingSubcomponentId = sub.Id;
+        SelectedComponentIdForSub = sub.ComponentId;
+        NewSubcomponentName = sub.Name;
+        NewSubcomponentPercentage = sub.Percentage;
+        ShowAddSubcomponentModal = true;
     }
 
 }
