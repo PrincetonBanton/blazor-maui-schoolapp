@@ -10,14 +10,16 @@
 <SchoolContextSelector />
 
 <div class="mt-3 d-flex align-items-center">
-    <button class="btn btn-primary me-3" style="width: 150px;" @onclick="ToggleMonthCalendar">
-        @(ShowMonthCalendar ? "Hide Calendar" : "Show Calendar")
-    </button>
-    <div>
+@*     <div>
         <strong>SY:</strong>
         @(SchoolContext.GetSelectedSchoolYearStart()?.ToString("MMMM dd, yyyy") ?? "N/A")
         -
         @(SchoolContext.GetSelectedSchoolYearEnd()?.ToString("MMMM dd, yyyy") ?? "N/A")
+    </div> *@
+    <div class="ms-auto">
+        <button class="btn btn-primary" style="width: 200px;" @onclick="ToggleMonthCalendar">
+            @(ShowMonthCalendar ? "Hide Calendar" : "Show Calendar")
+        </button>
     </div>
 </div>
 

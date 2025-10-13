@@ -1,4 +1,193 @@
 ﻿@page "/"
+@using System.Text.Json
+@using SchoolApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
 <SchoolContextSelector />
 
+@if (Subjects == null)
+{
+    <div class="mt-3">Loading subjects...</div>
+}
+else if (!Subjects.Any())
+{
+    <div class="alert alert-warning mt-3">
+        No subjects loaded for the selected School Year / Grade Level.
+    </div>
+}
+else
+{
+    <!-- SUBJECTS WITH TOP 5 STUDENTS -->
+    <div class="row mt-3">
+        @foreach (var s in Subjects)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <strong>@s.Name</strong>
+                        <span class="badge bg-light text-dark">Top 5</span>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            @foreach (var student in GetTop5Students())
+                            {
+                                <li>
+                                    <i class="bi bi-person-fill me-2"></i>@student
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- TOP ATTENDANCE LIST -->
+    <div class="mt-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <strong>Top Attendance</strong>
+                <span class="text-light">
+                    Total School Days: <strong>@TotalSchoolDays</strong>
+                </span>
+            </div>
+            <div class="card-body">
+                @if (Students == null || !Students.Any())
+                {
+                    <div class="text-muted">No students found for the selected School Section.</div>
+                }
+                else
+                {
+                    <ul class="list-group list-group-flush my-0">
+                        @foreach (var student in Students)
+                        {
+                            <li class="list-group-item border-0 d-flex justify-content-between align-items-center py-1">
+                                <span>
+                                    <i class="bi bi-person-fill me-2"></i>@student.FirstName @student.LastName
+                                </span>
+                                <span class="badge bg-primary rounded-pill">
+                                    0 / @TotalSchoolDays
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<Subject>? Subjects;
+    private List<Student>? Students;
+    private int TotalSchoolDays;
+
+    protected override async Task OnInitializedAsync()
+    {
+        SchoolContext.OnContextChanged += HandleContextChanged;
+        await LoadSubjects();
+        await LoadStudents();
+        ComputeTotalSchoolDays();
+    }
+
+    private async void HandleContextChanged()
+    {
+        if (NavigationManager.Uri.EndsWith("/"))
+        {
+            await LoadSubjects();
+            await LoadStudents();
+            ComputeTotalSchoolDays();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadSubjects()
+    {
+        if (!SchoolContext.SelectedSchoolYearId.HasValue || !SchoolContext.SelectedGradeLevelId.HasValue)
+        {
+            Subjects = new();
+            return;
+        }
+
+        try
+        {
+            var allSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new List<Subject>();
+
+            Subjects = allSubjects
+                .Where(s => s.GradeLevelId == SchoolContext.SelectedGradeLevelId.Value)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Subjects = new();
+            await JS.InvokeVoidAsync("alert", $"Error loading subjects: {ex.Message}");
+        }
+    }
+
+    private async Task LoadStudents()
+    {
+        if (!SchoolContext.SelectedSchoolSectionId.HasValue)
+        {
+            Students = new();
+            return;
+        }
+
+        try
+        {
+            var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new List<Student>();
+
+            Students = allStudents
+                .Where(stu => stu.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
+                .OrderBy(stu => stu.LastName)
+                .ThenBy(stu => stu.FirstName)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Students = new();
+            await JS.InvokeVoidAsync("alert", $"Error loading students: {ex.Message}");
+        }
+    }
+
+    private List<string> GetTop5Students()
+    {
+        if (Students == null || !Students.Any())
+            return new List<string>();
+
+        return Students
+            .Take(5)
+            .Select(s => $"{s.FirstName} {s.LastName}")
+            .ToList();
+    }
+
+    private void ComputeTotalSchoolDays()
+    {
+        var start = SchoolContext.GetSelectedSchoolYearStart();
+        var end = SchoolContext.GetSelectedSchoolYearEnd();
+
+        if (start == null || end == null)
+        {
+            TotalSchoolDays = 0;
+            return;
+        }
+
+        int count = 0;
+        for (var date = start.Value.Date; date <= end.Value.Date; date = date.AddDays(1))
+        {
+            if (date.DayOfWeek != DayOfWeek.Saturday && date.DayOfWeek != DayOfWeek.Sunday)
+            {
+                count++;
+            }
+        }
+
+        TotalSchoolDays = count;
+    }
+
+    public void Dispose()
+    {
+        SchoolContext.OnContextChanged -= HandleContextChanged;
+    }
+}

@@ -71,7 +71,22 @@
     {
         SchoolYears = await Http.GetFromJsonAsync<List<SchoolYear>>("api/SchoolYear") ?? new();
         SchoolContext.SetSchoolYears(SchoolYears);
+
+        //Automatically select the current school year if not yet selected
+        if (!SchoolContext.SelectedSchoolYearId.HasValue && SchoolYears.Any())
+        {
+            var today = DateTime.Now;
+            var currentSchoolYear = SchoolYears.FirstOrDefault(sy =>
+                sy.StartDate.Date <= today.Date && sy.EndDate.Date >= today.Date
+            );
+
+            if (currentSchoolYear != null)
+            {
+                SchoolContext.UpdateSchoolYear(currentSchoolYear.Id);
+            }
+        }
     }
+
 
     private async Task LoadGradeLevel()
     {
