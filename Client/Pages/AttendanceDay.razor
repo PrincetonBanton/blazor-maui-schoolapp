@@ -44,15 +44,18 @@ else
     <table class="table table-striped">
         <thead>
             <tr>
-                <th>Name</th>
-                <th class="text-center">Present</th>
-                <th class="text-center">Absent</th>
+                <th style="width:30%;">Name</th>
+                <th class="text-center" style="width:10%;">Present</th>
+                <th class="text-center" style="width:10%;">Absent</th>
+                <th style="width:50%;">Remarks</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var student in Students)
             {
                 var isPresent = AttendanceMap.TryGetValue(student.Id, out var p) ? p : true;
+                var remark = RemarksMap.TryGetValue(student.Id, out var r) ? r : "Absent";
+
                 <tr>
                     <td>
                         @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())
@@ -63,14 +66,49 @@ else
                     </td>
                     <td class="text-center">
                         <input type="radio" name="att-@student.Id" checked="@(!isPresent)"
-                               @onchange="@(() => SetAttendance(student.Id, false))" />
+                               @onchange="@(() => { SetAttendance(student.Id, false); OpenRemarkModal(student); })" />
+                    </td>
+
+                    <td>
+                        @if (!isPresent)
+                        {
+                            @remark
+                        }
+                        else
+                        {
+                            <span class="text-success fw-semibold">OK</span>
+                        }
                     </td>
                 </tr>
             }
         </tbody>
+
     </table>
 
     <button class="btn btn-primary" @onclick="SaveAttendanceAsync">Save Attendance</button>
+
+    @if (ShowRemarkModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color:rgba(0,0,0,0.5);">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Absent Remark</h5>
+                        <button type="button" class="btn-close" @onclick="() => ShowRemarkModal = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>@ModalStudentName</strong></p>
+                        <textarea class="form-control" @bind="ModalRemark" rows="3"></textarea>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @onclick="() => ShowRemarkModal = false">Cancel</button>
+                        <button class="btn btn-primary" @onclick="SaveRemark">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
 }
 
 @code {
@@ -79,12 +117,18 @@ else
     private DateTime SelectedDate { get; set; }
     private List<Student>? Students { get; set; }  // nullable to distinguish "loading"
     private readonly Dictionary<Guid, bool> AttendanceMap = new();
+    private readonly Dictionary<Guid, string> RemarksMap = new();
+
+    // Modal State
+    private bool ShowRemarkModal { get; set; } = false;
+    private Guid ModalStudentId { get; set; }
+    private string ModalStudentName { get; set; } = string.Empty;
+    private string ModalRemark { get; set; } = "Absent";
 
     protected override async Task OnInitializedAsync()
     {
         SchoolContext.OnContextChanged += OnContextChanged;
     }
-
 
     protected override async Task OnParametersSetAsync()
     {
@@ -117,18 +161,24 @@ else
                 .Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
                 .ToList();
 
-            // 2. Load saved attendance for this section + date
+            // Load saved attendance for this section + date
             var attendanceRecords = await Http.GetFromJsonAsync<List<Attendance>>(
                 $"api/attendance/{SchoolContext.SelectedSchoolSectionId}/{SelectedDate:yyyy-MM-dd}"
             ) ?? new();
 
-            // 3. Fill the map with either saved or default (Present)
             AttendanceMap.Clear();
+            RemarksMap.Clear();
+
             foreach (var student in Students)
             {
                 var record = attendanceRecords.FirstOrDefault(r => r.StudentId == student.Id);
                 AttendanceMap[student.Id] = record?.IsPresent ?? true;
+                if (record != null && !record.IsPresent)
+                {
+                    RemarksMap[student.Id] = record.Remarks ?? "Absent";
+                }
             }
+
         }
         catch (Exception ex)
         {
@@ -139,9 +189,15 @@ else
 
     private async void OnContextChanged()
     {
+        AttendanceMap.Clear(); 
+        Students = null;       
+        StateHasChanged();     
+
         await LoadStudentsAndAttendanceAsync();
         StateHasChanged();
     }
+
+
     public void Dispose()
     {
         SchoolContext.OnContextChanged -= OnContextChanged;
@@ -160,37 +216,72 @@ else
             return;
         }
 
-        var records = Students.Select(s => new Attendance
+        try
         {
-            Id = Guid.NewGuid(),
-            StudentId = s.Id,
-            SchoolSectionId = SchoolContext.SelectedSchoolSectionId!.Value,
-            GradeLevelId = SchoolContext.SelectedGradeLevelId!.Value,
-            SchoolYearId = SchoolContext.SelectedSchoolYearId!.Value,
-            AttendanceDate = SelectedDate,
-            IsPresent = AttendanceMap.TryGetValue(s.Id, out var p) ? p : true,
-            Remarks = "Trial",
-            CreatedAt = DateTime.Now 
-        }).ToList();
+            // Delete existing attendance for this section and date
+            var deleteUrl = $"api/attendance/{SchoolContext.SelectedSchoolSectionId}/{SelectedDate:yyyy-MM-dd}";
+            var deleteResponse = await Http.DeleteAsync(deleteUrl);
 
+            if (!deleteResponse.IsSuccessStatusCode)
+            {
+                var err = await deleteResponse.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Failed to clear existing attendance: {err}");
+                return;
+            }
 
-        var json = System.Text.Json.JsonSerializer.Serialize( records,
-             new System.Text.Json.JsonSerializerOptions { WriteIndented = true }
-);
-        await JS.InvokeVoidAsync("alert", json);
+            // Build list of absences only (default = present)
+            var absences = Students
+                .Where(s => AttendanceMap.TryGetValue(s.Id, out var present) ? !present : false)
+                .Select(s => new Attendance
+                {
+                    Id = Guid.NewGuid(),
+                    StudentId = s.Id,
+                    SchoolSectionId = SchoolContext.SelectedSchoolSectionId!.Value,
+                    GradeLevelId = SchoolContext.SelectedGradeLevelId!.Value,
+                    SchoolYearId = SchoolContext.SelectedSchoolYearId!.Value,
+                    AttendanceDate = SelectedDate,
+                    IsPresent = false,
+                    Remarks = RemarksMap.TryGetValue(s.Id, out var remark) ? remark : "Absent",
+                    CreatedAt = DateTime.Now
+                })
+                .ToList();
 
-        var response = await Http.PostAsJsonAsync("api/attendance", records);
+            // Insert absences only if there are any
+            if (absences.Any())
+            {
+                var postResponse = await Http.PostAsJsonAsync("api/attendance", absences);
 
-        if (response.IsSuccessStatusCode)
-        {
-            await JS.InvokeVoidAsync("alert", $"Saved {records.Count} attendance records for {SelectedDate:MMMM dd, yyyy}.");
+                if (!postResponse.IsSuccessStatusCode)
+                {
+                    var err = await postResponse.Content.ReadAsStringAsync();
+                    await JS.InvokeVoidAsync("alert", $"Failed to save absences: {err}");
+                    return;
+                }
+            }
+
+            var message = absences.Any()
+                ? $"Saved {absences.Count} absence(s) for {SelectedDate:MMMM dd, yyyy}."
+                : $"All students marked present for {SelectedDate:MMMM dd, yyyy}.";
+            await JS.InvokeVoidAsync("alert", message);
+            await LoadStudentsAndAttendanceAsync();
         }
-        else
+        catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", "Failed to save attendance.");
+            await JS.InvokeVoidAsync("alert", $"Error saving attendance: {ex.Message}");
         }
     }
 
-
+    private void OpenRemarkModal(Student student)
+    {
+        ModalStudentId = student.Id;
+        ModalStudentName = $"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim();
+        ModalRemark = RemarksMap.TryGetValue(student.Id, out var r) ? r : "Absent";
+        ShowRemarkModal = true;
+    }
+    private void SaveRemark()
+    {
+        RemarksMap[ModalStudentId] = ModalRemark;
+        ShowRemarkModal = false;
+    }
 
 }

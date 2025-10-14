@@ -55,6 +55,22 @@ namespace SchoolApp.Server.Controllers
             return Ok(records);
         }
 
+        [HttpDelete("{sectionId:guid}/{date}")]
+        public async Task<IActionResult> DeleteAttendance(Guid sectionId, DateTime date)
+        {
+            var records = await _context.Attendances
+                .Where(a => a.SchoolSectionId == sectionId && a.AttendanceDate.Date == date.Date)
+                .ToListAsync();
+
+            if (records.Any())
+            {
+                _context.Attendances.RemoveRange(records);
+                await _context.SaveChangesAsync();
+            }
+
+            return NoContent();
+        }
+
     }
 
 }
