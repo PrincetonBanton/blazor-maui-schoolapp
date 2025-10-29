@@ -29,11 +29,10 @@ else
             </div>
         </div>
 
-        <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between mt-2 p-2">
-            <span>Grade Level: @CurrentGradeLevel</span>
-            <span>Section: @CurrentSection</span>
+        <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center mt-2 py-3">
+            <span class="fs-5">Grade Level: @CurrentGradeLevel</span>
+            <span class="fs-5">Section: @CurrentSection</span>
         </div>
-
     </div>
 
     @if (Subjects == null)
@@ -46,7 +45,7 @@ else
     }
     else
     {
-        <table class="table table-striped" style="margin-top: 10px">
+        <table class="table table-striped" >
             <thead>
                 <tr>
                     <th style="width:20%;">Subject</th>

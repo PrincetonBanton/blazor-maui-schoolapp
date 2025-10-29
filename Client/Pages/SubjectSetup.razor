@@ -216,6 +216,7 @@ else if (SelectedSubjectId != null)
                                 @onclick="CloseComponentModal"></button>
                     </div>
                     <div class="modal-body">
+                        @* <button class="btn btn-success mb-2" @onclick="SeedDemoComponents">Seed Demo Components</button> *@
                         <input type="text" class="form-control mb-2" placeholder="Component Name" @bind="NewComponentName" />
                         <input type="number" class="form-control mb-2" placeholder="% of Subject" @bind="NewComponentPercentage" />
                     </div>
@@ -636,7 +637,9 @@ else
             if (response.IsSuccessStatusCode)
             {
                 await JS.InvokeVoidAsync("alert", "Template validated successfully.");
-                await LoadSubjects();
+                await Task.Delay(800);
+                NavigationManager.NavigateTo("/subject/list");
+                //await LoadSubjects();
             }
             else
             {
@@ -649,6 +652,7 @@ else
             await JS.InvokeVoidAsync("alert", $"Error validating template: {ex.Message}");
         }
     }
+
     private async Task ValidateComponentAndSubcomponentPercentages()
     {
         var result = TemplateValidator.Validate(Components);
@@ -715,4 +719,34 @@ else
         ShowAddSubcomponentModal = true;
     }
 
+    // private async Task SeedDemoComponents()
+    // {
+    //     var standardComponents = new List<Component>
+    // {
+    //     new() { Name = "Written Works", Percentage = 30 },
+    //     new() { Name = "Performance Tasks", Percentage = 50 },
+    //     new() { Name = "Quarterly Assessment", Percentage = 20 }
+    // };
+
+    //     foreach (var subject in Subjects)
+    //     {
+    //         // Skip validated subjects or already seeded ones
+    //         if (subject.IsValidated) continue;
+    //         var existing = await Http.GetFromJsonAsync<List<Component>>($"api/Subject/{subject.Id}/Components");
+    //         if (existing?.Any() == true) continue;
+
+    //         foreach (var comp in standardComponents)
+    //         {
+    //             var newComp = new Component
+    //             {
+    //                 Name = comp.Name,
+    //                 Percentage = comp.Percentage,
+    //                 SubjectId = subject.Id
+    //             };
+    //             await Http.PostAsJsonAsync("api/component", newComp);
+    //         }
+    //     }
+    //     await JS.InvokeVoidAsync("alert", "Demo components seeded successfully for all subjects!");
+    //     await LoadComponents();
+    // }
 }

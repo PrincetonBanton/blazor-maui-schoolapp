@@ -26,8 +26,11 @@ else if (subjects == null)
 }
 else if (!subjects.Any())
 {
-    <div class="alert alert-warning mt-3">
-       No subjects found.
+    <div class="alert alert-warning mt-3 d-flex justify-content-between align-items-center">
+        <div>
+            Do you want to add a subject for <strong>@SchoolContext.GetSelectedGradeLevelName()</strong>?
+        </div>
+        <button class="btn btn-primary btn-sm" @onclick="ShowAddSubjectModal">Yes</button>
     </div>
 }
 else
@@ -82,33 +85,32 @@ else
             }
         </tbody>
     </table>
-
-    @if (ShowModal)
-    {
-        <div class="modal d-block" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">@((IsEditMode ? "Edit Subject" : "Add Subject"))</h5>
-                        <button type="button" class="btn-close" @onclick="HideSubjectModal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <div class="alert alert-info d-flex align-items-center justify-content-between p-3 mb-3 border" style="min-height: 50px;">
-                                <strong>@SchoolContext.GetSelectedGradeLevelName()</strong>
-                                <small>ID: @(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
-                            </div>
+}
+@if (ShowModal)
+{
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">@((IsEditMode ? "Edit Subject" : "Add Subject"))</h5>
+                    <button type="button" class="btn-close" @onclick="HideSubjectModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <div class="alert alert-info d-flex align-items-center justify-content-between p-3 mb-3 border" style="min-height: 50px;">
+                            <strong>@SchoolContext.GetSelectedGradeLevelName()</strong>
+                            <small>ID: @(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
                         </div>
-                        <input type="text" class="form-control mb-3" placeholder="Subject Name" @bind="NewSubjectName" />
                     </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" style="width:150px" @onclick="HideSubjectModal">Cancel</button>
-                        <button class="btn btn-primary" style="width:150px" @onclick="SaveSubjectAsync">@(IsEditMode ? "Update" : "Save")</button>
-                    </div>
+                    <input type="text" class="form-control mb-3" placeholder="Subject Name" @bind="NewSubjectName" />
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" style="width:150px" @onclick="HideSubjectModal">Cancel</button>
+                    <button class="btn btn-primary" style="width:150px" @onclick="SaveSubjectAsync">@(IsEditMode ? "Update" : "Save")</button>
                 </div>
             </div>
         </div>
-    }
+    </div>
 }
 
 @code {
@@ -135,7 +137,6 @@ else
         SchoolContext.OnContextChanged -= OnContextChanged;
     }
 
-
     private async Task LoadSubjects()
     {
         if (!SchoolContext.SelectedSchoolYearId.HasValue)
@@ -152,6 +153,7 @@ else
             {
                 subjects = allSubjects
                     .Where(s => s.GradeLevelId == SchoolContext.SelectedGradeLevelId.Value)
+                    .OrderBy(s => s.Name) 
                     .ToList();
             }
             else
@@ -164,6 +166,7 @@ else
             await JS.InvokeVoidAsync("alert", $"Error loading subjects: {ex.Message}");
         }
     }
+
 
     private async Task AddSubject()
     {
@@ -287,7 +290,6 @@ else
             }
         }
     }
-
 
     //JS.InvokeVoidAsync("alert", $"subcount: {component}");
     //var json = JsonSerializer.Serialize(component, new JsonSerializerOptions { WriteIndented = true });
