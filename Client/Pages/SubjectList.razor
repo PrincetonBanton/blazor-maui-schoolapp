@@ -7,19 +7,19 @@
 
 <SchoolContextSelector />
 
-@if (!SchoolContext.SelectedSchoolYearId.HasValue)
+@if (!SchoolContext.SelectedSchoolYearId.HasValue ||
+     !SchoolContext.SelectedGradeLevelId.HasValue ||
+     !SchoolContext.SelectedSchoolSectionId.HasValue)
 {
-    <div class="alert alert-warning mt-3">
-        Please select a <strong>School Year</strong> to view subjects.
+    <div class="container-fluid d-flex justify-content-center mt-3">
+        <a class="navbar-brand mx-auto" href="">
+            <img src="sample_logo.png" alt="School Logo" width="130" height="130" class="d-inline-block align-top" />
+        </a>
+    </div>
+    <div class="alert mt-1 text-center">
+        No Available Data - Select Grade Level or Section
     </div>
 }
-else if (!SchoolContext.SelectedGradeLevelId.HasValue)
-{
-    <div class="alert alert-warning mt-3">
-        Please select a <strong>Grade Level</strong> to view subjects.
-    </div>
-}
-
 else if (subjects == null)
 {
     <LoadingSpinner />
@@ -86,7 +86,7 @@ else
     @if (ShowModal)
     {
         <div class="modal d-block" tabindex="-1">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title">@((IsEditMode ? "Edit Subject" : "Add Subject"))</h5>

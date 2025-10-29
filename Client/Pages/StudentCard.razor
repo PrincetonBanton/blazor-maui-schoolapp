@@ -3,8 +3,8 @@
 
 @inject HttpClient Http
 @inject IJSRuntime JS
-@using System.Text.Json
 @inject NavigationManager NavigationManager
+@using System.Text.Json
 @using SchoolApp.Shared.Models
 
 @if (Student == null)
@@ -13,18 +13,27 @@
 }
 else
 {
-    <div class="card-body d-flex align-items-start" style="padding: 0">
-        <img src="id_pic.png" alt="Student Photo"
-            class="rounded border me-3"
-            style="width: 150px; height: 150px; object-fit: cover;" />
-        <div>
-            <h4 class="mb-1"><strong>@Student.FullName</strong></h4>
-            <p class="mb-1">Birthdate: @Student.DateOfBirth</p>
-            <p class="mb-1">Gender: @Student.Gender</p>
-            <p class="mb-1">Address: @Student.Address</p>
-            <p class="mb-1">Guardian: Parents Name</p>
-            <p class="mb-1">Contact#: @Student.ContactNumber</p>
+    <div class="card shadow-sm border-0 rounded-3 p-3; margin: auto;">
+        <div class="d-flex align-items-center">
+            <img src="id_pic.png" alt="Student Photo"
+                 class="rounded border me-3"
+                 style="width: 150px; height: 150px; object-fit: cover;" />
+
+            <div class="flex-grow-1">
+                <h4 class="fw-bold mb-1 text-primary">@Student.FullName</h4>
+                <p class="mb-1"><strong>Birthdate:</strong> @Student.DateOfBirth.ToString("MMMM dd, yyyy")</p>
+                <p class="mb-1"><strong>Gender:</strong> @Student.Gender</p>
+                <p class="mb-1"><strong>Address:</strong> @Student.Address</p>
+                <p class="mb-1"><strong>Guardian:</strong> Parents Name</p>
+                <p class="mb-1"><strong>Contact#:</strong> @Student.ContactNumber</p>
+            </div>
         </div>
+
+        <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between mt-2 p-2">
+            <span>Grade Level: @CurrentGradeLevel</span>
+            <span>Section: @CurrentSection</span>
+        </div>
+
     </div>
 
     @if (Subjects == null)
@@ -40,13 +49,13 @@ else
         <table class="table table-striped" style="margin-top: 10px">
             <thead>
                 <tr>
-                    <th>Subject</th>
-                    <th>1st Grading</th>
-                    <th>2nd Grading</th>
-                    <th>3rd Grading</th>
-                    <th>4th Grading</th>
-                    <th>Final Grade</th>
-                    <th>Remarks</th>
+                    <th style="width:20%;">Subject</th>
+                    <th style="width:10%;">1st Grading</th>
+                    <th style="width:10%;">2nd Grading</th>
+                    <th style="width:10%;">3rd Grading</th>
+                    <th style="width:10%;">4th Grading</th>
+                    <th style="width:10%;">Final Grade</th>
+                    <th style="width:30%;">Remarks</th>
                 </tr>
             </thead>
             <tbody>
@@ -71,7 +80,6 @@ else
                         <td class="text-center @remarksClass">@remarks</td>
                     </tr>
                 }
-
             </tbody>
         </table>
     }
@@ -79,11 +87,16 @@ else
 
 @code {
     [Parameter] public Guid StudentId { get; set; }
+
     private Student? Student;
-    private List<Student> AllStudents;
-    private List<Subject> Subjects;
+    private List<Student> AllStudents = new();
+    private List<Subject> Subjects = new();
     private List<SubGradingItem> SubGradingItems = new();
     private List<SubGradingScore> SubGradingScores = new();
+
+    private string CurrentSchoolYear = "N/A";
+    private string CurrentGradeLevel = "N/A";
+    private string CurrentSection = "N/A";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -104,10 +117,21 @@ else
             try
             {
                 Student = await Http.GetFromJsonAsync<Student>($"api/student/{StudentId}");
-                Subjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject");
-                SubGradingItems = await Http.GetFromJsonAsync<List<SubGradingItem>>("api/SubGradingItem");
-                SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>($"api/SubGradingScore/ByStudent/{StudentId}"); 
+                await LoadRelatedSchoolData();
+                var allSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+                if (Student?.GradeLevelId != null && Student.GradeLevelId != Guid.Empty)
+                {
+                    Subjects = allSubjects
+                        .Where(s => s.GradeLevelId == Student.GradeLevelId)
+                        .ToList();
+                }
+                else
+                {
+                    Subjects = new();
+                }
 
+                SubGradingItems = await Http.GetFromJsonAsync<List<SubGradingItem>>("api/SubGradingItem") ?? new();
+                SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>($"api/SubGradingScore/ByStudent/{StudentId}") ?? new();
             }
             catch (Exception ex)
             {
@@ -116,25 +140,42 @@ else
         }
     }
 
+    private async Task LoadRelatedSchoolData()
+    {
+        try
+        {
+            var gradeLevels = await Http.GetFromJsonAsync<List<GradeLevel>>("api/GradeLevel") ?? new();
+            var sections = await Http.GetFromJsonAsync<List<SchoolSection>>("api/SchoolSection") ?? new();
+
+            if (Student != null)
+            {
+                CurrentGradeLevel = gradeLevels.FirstOrDefault(gl => gl.Id == Student.GradeLevelId)?.LevelName ?? "N/A";
+                CurrentSection = sections.FirstOrDefault(ss => ss.Id == Student.SchoolSectionId)?.SectionName ?? "N/A";
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error loading school info: {ex.Message}");
+        }
+    }
+
     private double GetStudentScore(Guid subjectId, Guid studentId, int gradingPeriod)
     {
         var itemsForSubject = SubGradingItems
-            .Where(i => i.SubjectId == subjectId && i.GradingPeriod == gradingPeriod) // Added filter
+            .Where(i => i.SubjectId == subjectId && i.GradingPeriod == gradingPeriod)
             .Select(i => i.Id)
             .ToList();
-
-        // var json = JsonSerializer.Serialize(itemsForSubject, new JsonSerializerOptions { WriteIndented = true });
-        // JS.InvokeVoidAsync("alert", "items for the subject " + json);
 
         var scores = SubGradingScores
             .Where(s => itemsForSubject.Contains(s.SubGradingItemId) &&
                         s.StudentId == studentId &&
                         s.GradingPeriod == gradingPeriod)
             .Select(s => s.PercentSubject);
+
         return scores.Any() ? scores.Sum() : 0;
     }
 
-     private void OnStudentSelected(ChangeEventArgs e)
+    private void OnStudentSelected(ChangeEventArgs e)
     {
         if (Guid.TryParse(e.Value?.ToString(), out Guid selectedId))
         {
@@ -142,4 +183,3 @@ else
         }
     }
 }
-
