@@ -109,5 +109,20 @@ public class SubjectController : ControllerBase
         return Ok(subjects);
     }
 
+    // PUT: api/subject/invalidate/{id}
+    [HttpPut("invalidate/{id}")]
+    public IActionResult InvalidateTemplate(Guid id)
+    {
+        var subject = _context.Subjects.FirstOrDefault(s => s.Id == id);
+        if (subject == null)
+            return NotFound();
+
+        subject.IsValidated = false;
+        _context.SaveChanges();
+
+        return NoContent();
+    }
+
+
 
 }

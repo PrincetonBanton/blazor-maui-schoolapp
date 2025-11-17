@@ -7,18 +7,16 @@
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
+
+<PageHeader Title="Calendar" />
 <SchoolContextSelector />
 
 <div class="mt-3 d-flex align-items-center">
-@*     <div>
-        <strong>SY:</strong>
-        @(SchoolContext.GetSelectedSchoolYearStart()?.ToString("MMMM dd, yyyy") ?? "N/A")
-        -
-        @(SchoolContext.GetSelectedSchoolYearEnd()?.ToString("MMMM dd, yyyy") ?? "N/A")
-    </div> *@
     <div class="ms-auto">
-        <button class="btn btn-primary" style="width: 200px;" @onclick="ToggleMonthCalendar">
-            @(ShowMonthCalendar ? "Hide Calendar" : "Show Calendar")
+        <button title="Toggle Calendar"
+                @onclick="ToggleMonthCalendar"
+                style="background:none; border:none; font-size:3rem; cursor:pointer; margin-bottom:0">
+            @(ShowMonthCalendar ? "📅" : "🗓️")
         </button>
     </div>
 </div>

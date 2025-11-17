@@ -1,0 +1,17 @@
+﻿@code {
+    [Parameter]
+    public string Title { get; set; } = "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 w-100 gap-3"
+     style="padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
+
+    <div style="font-size: 1.6rem; font-weight: 600; padding-top: 10px; color:darkblue">
+        @Title
+    </div>
+    <div class="d-flex align-items-center ms-auto" style="width: 30%;">
+        <input type="text" class="form-control me-2" placeholder="Search..." />
+        <img src="search.png" width="30" height="30" />
+    </div>
+</div>
+

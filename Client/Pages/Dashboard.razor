@@ -6,6 +6,7 @@
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
+<PageHeader Title="Dashboard" />
 <SchoolContextSelector />
 
 @if (Subjects == null)
@@ -25,6 +26,43 @@ else if (!Subjects.Any())
 }
 else
 {
+    <!-- TOP ATTENDANCE LIST -->
+    <div class="mt-5">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <strong>Top Attendance</strong>
+                <span class="text-light">
+                    School Days: <strong>@TotalSchoolDays</strong>
+                </span>
+            </div>
+            <div class="card-body">
+                @if (Students == null || !Students.Any())
+                {
+                    <div class="text-muted">No students found for the selected School Section.</div>
+                }
+                else
+                {
+                    <div style="max-height: 300px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush my-0">
+                            @foreach (var student in Students)
+                            {
+                                <li class="list-group-item border-0 d-flex justify-content-between align-items-center py-1">
+                                    <span>
+                                        <i class="bi bi-person-fill me-2"></i>@student.FirstName @student.LastName
+                                    </span>
+                                    <span class="badge @(GetAbsences(student.Id) == 0 ? "bg-success" :
+                                            GetAbsences(student.Id) <= 2 ? "bg-warning text-dark" : "bg-danger") rounded-pill shadow-sm"
+                                            style="font-size: 1rem; font-weight: 400; padding: 0.4rem 0.9rem; min-width: 45px; text-align: center;">
+                                            @GetAbsences(student.Id)
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
     <!-- SUBJECTS WITH TOP 5 STUDENTS -->
     <div class="row mt-3">
         @foreach (var s in Subjects)
@@ -49,52 +87,21 @@ else
             </div>
         }
     </div>
-
-    <!-- TOP ATTENDANCE LIST -->
-    <div class="mt-5">
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <strong>Top Attendance</strong>
-                <span class="text-light">
-                    Total School Days: <strong>@TotalSchoolDays</strong>
-                </span>
-            </div>
-            <div class="card-body">
-                @if (Students == null || !Students.Any())
-                {
-                    <div class="text-muted">No students found for the selected School Section.</div>
-                }
-                else
-                {
-                    <ul class="list-group list-group-flush my-0">
-                        @foreach (var student in Students)
-                        {
-                            <li class="list-group-item border-0 d-flex justify-content-between align-items-center py-1">
-                                <span>
-                                    <i class="bi bi-person-fill me-2"></i>@student.FirstName @student.LastName
-                                </span>
-                                <span class="badge bg-primary rounded-pill">
-                                    0 / @TotalSchoolDays
-                                </span>
-                            </li>
-                        }
-                    </ul>
-                }
-            </div>
-        </div>
-    </div>
 }
 
 @code {
     private List<Subject>? Subjects;
     private List<Student>? Students;
+    private List<Attendance>? Attendances;
     private int TotalSchoolDays;
+    private Dictionary<Guid, int> AbsenceCounts = new();
 
     protected override async Task OnInitializedAsync()
     {
         SchoolContext.OnContextChanged += HandleContextChanged;
         await LoadSubjects();
         await LoadStudents();
+        await LoadAbsences();       
         ComputeTotalSchoolDays();
     }
 
@@ -104,6 +111,7 @@ else
         {
             await LoadSubjects();
             await LoadStudents();
+            await LoadAbsences();
             ComputeTotalSchoolDays();
             StateHasChanged();
         }
@@ -156,6 +164,54 @@ else
             await JS.InvokeVoidAsync("alert", $"Error loading students: {ex.Message}");
         }
     }
+    private async Task LoadAbsences()
+    {
+        if (!SchoolContext.SelectedSchoolYearId.HasValue ||
+            !SchoolContext.SelectedGradeLevelId.HasValue ||
+            !SchoolContext.SelectedSchoolSectionId.HasValue)
+        {
+            Attendances = new();
+            return;
+        }
+
+        try
+        {
+            if (Students == null || !Students.Any())
+            {
+                await LoadStudents();
+            }
+
+            var allAbsences = await Http.GetFromJsonAsync<List<Attendance>>("api/attendance") ?? new List<Attendance>();
+
+            // Filter by selected section and school year
+            Attendances = allAbsences
+                .Where(a =>
+                    a.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value &&
+                    a.SchoolYearId == SchoolContext.SelectedSchoolYearId.Value)
+                .ToList();
+
+            // Count absences per student
+            AbsenceCounts = Attendances
+                .GroupBy(a => a.StudentId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // Sort students: fewest absences first (0 on top)
+            Students = Students
+                .OrderBy(s => GetAbsences(s.Id))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Attendances = new();
+            await JS.InvokeVoidAsync("alert", $"Error loading absences: {ex.Message}");
+        }
+    }
+
+    private int GetAbsences(Guid studentId)
+    {
+        return AbsenceCounts.TryGetValue(studentId, out var count) ? count : 0;
+    }
+
 
     private List<string> GetTop5Students()
     {

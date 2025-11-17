@@ -5,6 +5,7 @@
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
+<PageHeader Title="Subject List" />
 <SchoolContextSelector />
 
 @if (!SchoolContext.SelectedSchoolYearId.HasValue ||
@@ -77,7 +78,12 @@ else
                                     Subject Setup
                                 </NavLink>
                             }
-                            <button class="btn btn-sm btn-warning" style="width:80px;" @onclick="() => EditSubject(subject)">Edit</button>
+                            <button title="Edit"
+                                    @onclick="() => EditSubject(subject)"
+                                    style="background:none; border:none; color:#f4b400; font-size:1.3rem; cursor:pointer;">
+                                ✏️
+                            </button>
+
                        </div>
                     </td>
                 </tr>
@@ -245,7 +251,6 @@ else
 
         if (IsEditMode)
         {
-            // Update
             EditingSubject.Name = NewSubjectName;
 
             var response = await Http.PutAsJsonAsync($"api/subject/{EditingSubject.Id}", EditingSubject);
@@ -263,7 +268,6 @@ else
         }
         else
         {
-            // Add new
             if (subjects!.Any(s => s.Name.Trim().ToLower() == NewSubjectName.Trim().ToLower()))
             {
                 await JS.InvokeVoidAsync("alert", "Subject already exists.");

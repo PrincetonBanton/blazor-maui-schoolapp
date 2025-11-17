@@ -3,55 +3,52 @@
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-<div class="d-flex align-items-start mb-3">
-    <div class="me-3 d-flex align-items-center">
-        <select class="form-control stylish-select" style="width: 300px;" @onchange="OnSchoolYearChanged">
-            <option value="" disabled selected hidden>Select School Year</option>
-            @foreach (var sy in SchoolYears)
+<div class="d-flex align-items-start mb-3 gap-3" style="width: 100%;">
+    <select class="form-control stylish-select" style="flex:1;" @onchange="OnSchoolYearChanged">
+        <option value="" disabled selected hidden>Select School Year</option>
+        @foreach (var sy in SchoolYears)
+        {
+            <option value="@sy.Id" selected="@(sy.Id == SchoolContext.SelectedSchoolYearId)">
+                @sy.SchoolYearName
+            </option>
+        }
+    </select>
+
+    <select class="form-control" style="flex:1;" @onchange="OnGradeLevelChanged">
+        <option value="" disabled selected hidden>Select Grade Level</option>
+        @if (GradeLevels == null || !GradeLevels.Any())
+        {
+            <option disabled>No grade levels yet</option>
+        }
+        else
+        {
+            @foreach (var gl in GradeLevels)
             {
-                <option value="@sy.Id" selected="@(sy.Id == SchoolContext.SelectedSchoolYearId)">
-                    @sy.SchoolYearName
+                <option value="@gl.Id" selected="@(gl.Id == SchoolContext.SelectedGradeLevelId)">
+                    @gl.LevelName
                 </option>
             }
-        </select>
-    </div>
-    <div class="me-3 d-flex align-items-center">
-        <select class="form-control" style="width: 300px;" @onchange="OnGradeLevelChanged">
-            <option value="" disabled selected hidden>Select Grade Level</option>
-            @if (GradeLevels == null || !GradeLevels.Any())
+        }
+    </select>
+
+    <select class="form-control" style="flex:1;" @onchange="OnSchoolSectionChanged">
+        <option value="" disabled selected hidden>Select School Section</option>
+        @if (SchoolSections == null || !SchoolSections.Any())
+        {
+            <option disabled>No school sections yet</option>
+        }
+        else
+        {
+            @foreach (var ss in SchoolSections)
             {
-                <option disabled>No grade levels yet</option>
+                <option value="@ss.Id" selected="@(ss.Id == SchoolContext.SelectedSchoolSectionId)">
+                    @ss.SectionName
+                </option>
             }
-            else
-            {
-                @foreach (var gl in GradeLevels)
-                {
-                    <option value="@gl.Id" selected="@(gl.Id == SchoolContext.SelectedGradeLevelId)">
-                        @gl.LevelName
-                    </option>
-                }
-            }
-        </select>
-    </div>
-    <div class="me-3 d-flex align-items-center">
-        <select class="form-control" style="width: 300px;" @onchange="OnSchoolSectionChanged">
-            <option value="" disabled selected hidden>Select School Section</option>
-            @if (SchoolSections == null || !SchoolSections.Any())
-            {
-                <option disabled>No school sections yet</option>
-            }
-            else
-            {
-                @foreach (var ss in SchoolSections)
-                {
-                    <option value="@ss.Id" selected="@(ss.Id == SchoolContext.SelectedSchoolSectionId)">
-                        @ss.SectionName
-                    </option>
-                }
-            }
-        </select>
-    </div>
+        }
+    </select>
 </div>
+
 
 @code {
     private List<SchoolYear> SchoolYears = new();

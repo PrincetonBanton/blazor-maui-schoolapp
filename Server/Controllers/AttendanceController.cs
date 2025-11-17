@@ -16,6 +16,13 @@ namespace SchoolApp.Server.Controllers
             _context = context;
         }
 
+        [HttpGet]
+        public async Task<ActionResult<List<Attendance>>> GetAllAttendances()
+        {
+            var records = await _context.Attendances.ToListAsync();
+            return Ok(records);
+        }
+
         [HttpPost]
         public async Task<IActionResult> SaveAttendance([FromBody] List<Attendance> records)
         {

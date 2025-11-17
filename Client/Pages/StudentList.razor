@@ -5,6 +5,7 @@
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
+<PageHeader Title="My Students" />
 <SchoolContextSelector />
 
 @if (!SchoolContext.SelectedSchoolYearId.HasValue ||
@@ -47,12 +48,12 @@ else
         </button>
     </div>
 
-    <table class="table table-striped">
+    <table class="table table-striped align-middle">
         <tbody>
             @if (students.Count == 0)
             {
                 <tr>
-                    <td colspan="7" class="text-center text-muted">
+                    <td colspan="8" class="text-center text-muted">
                         No student data to display yet.
                     </td>
                 </tr>
@@ -63,17 +64,43 @@ else
                 foreach (var student in students)
                 {
                     <tr>
-                        <td style="width: 5%;"> @index </td>
-                        <td style="width: 30%;"> @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())</td>
-                        <td style="width: 10%;"> @student.DateOfBirth.ToString("yyyy-MM-dd")</td>
-                        <td style="width: 10%;">  @student.Gender</td>
-                        <td style="width: 20%;"> @student.Address</td>
-                        <td style="width: 20%;"> @student.ContactNumber</td>
+                        <!-- Row number -->
+                        <td style="width: 5%; text-align:center;">@index</td>
+
+                        <!-- Student picture -->
+                        <td style="width: 10%; text-align:center;">
+                            <img src="id_pic.png" alt="Student Photo"
+                                 class="rounded border me-3"
+                                 style="width: 30px; height: 30px; object-fit: cover;" />
+                        </td>
+
+                        <!-- Student name -->
+                        <td style="width: 25%;">
+                            @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())
+                        </td>
+
+                        <td style="width: 10%;">@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                        <td style="width: 10%;">@student.Gender</td>
+                        <td style="width: 20%;">@student.Address</td>
+                        <td style="width: 10%;">@student.ContactNumber</td>
+
+                        <!-- Action buttons -->
                         <td style="width: 20%;">
-                            <div class="d-flex gap-3">
-                                <button class="btn btn-sm btn-warning" style="width:80px;" @onclick="() => EditStudent(student)">Edit</button>
-                                <button class="btn btn-sm btn-danger" style="width:80px;" disabled>Delete</button>
-                                <a class="btn btn-sm btn-primary" style="width:150px;" href="@($"/students/card/{student.Id}")">View Card</a>
+                            <div class="d-flex gap-2 justify-content-center">
+                                <div style="display:flex; gap:10px; justify-content:center;">
+                                    <button title="Edit"
+                                            @onclick="() => EditStudent(student)"
+                                            style="background:none; border:none; color:#f4b400; font-size:1.3rem; cursor:pointer;">
+                                        ✏️
+                                    </button>
+
+                                    <button title="Delete"
+                                            disabled
+                                            style="background:none; border:none; color:#d93025; font-size:1.3rem; cursor:not-allowed; opacity:0.6;">
+                                        ❌
+                                    </button>
+                                </div>
+                                <a class="btn btn-sm btn-primary" style="width:120px;" href="@($"/students/card/{student.Id}")">View Card</a>
                             </div>
                         </td>
                     </tr>
@@ -82,6 +109,7 @@ else
             }
         </tbody>
     </table>
+
 }
 
 
@@ -99,10 +127,17 @@ else
                         Auto-Fill Student Info
                     </button>
                     <div class="mb-3">
-                        <div class="alert alert-info d-flex align-items-center justify-content-between p-3 mb-3 border" style="min-height: 50px;">
-                            <strong>@SchoolContext.GetSelectedSchoolSectionName()</strong>
-                            <small>ID: @(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
+                        <div class="alert alert-info d-flex justify-content-between align-items-center p-3 mb-3 border" style="min-height: 60px;">
+                            <div>
+                                <strong>@SchoolContext.GetSelectedGradeLevelName()</strong><br />
+                                <strong>@SchoolContext.GetSelectedSchoolSectionName()</strong>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-muted">@(SchoolContext.SelectedGradeLevelId?.ToString() ?? "N/A")</small><br />
+                                <small class="text-muted">@(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
+                            </div>
                         </div>
+
                     </div>
 
                     <input class="form-control" placeholder="First Name" style="margin-bottom: 1rem;" @bind="NewStudent.FirstName" />
@@ -177,7 +212,8 @@ else
     {
         NewStudent = new Student
         {
-            SchoolSectionId = SchoolContext.SelectedSchoolSectionId
+            SchoolSectionId = SchoolContext.SelectedSchoolSectionId,
+            GradeLevelId = SchoolContext.SelectedGradeLevelId
         };
         IsEditMode = false;
         ShowModal = true;
@@ -195,12 +231,14 @@ else
             Gender = student.Gender,
             Address = student.Address,
             ContactNumber = student.ContactNumber,
-            SchoolSectionId = student.SchoolSectionId
+            SchoolSectionId = student.SchoolSectionId,
+            GradeLevelId = student.GradeLevelId
         };
 
         IsEditMode = true;
         ShowModal = true;
     }
+
 
     private void HideStudentModal()
     {
@@ -209,6 +247,9 @@ else
 
     private async Task SaveStudentAsync()
     {
+        NewStudent.GradeLevelId = SchoolContext.SelectedGradeLevelId;
+        NewStudent.SchoolSectionId = SchoolContext.SelectedSchoolSectionId;
+
         var errorMessage = ValidateStudent();
         if (errorMessage != null)
         {
@@ -248,6 +289,7 @@ else
         }
     }
 
+
     private string? ValidateStudent()
     {
         if (string.IsNullOrWhiteSpace(NewStudent.FirstName))
@@ -262,10 +304,13 @@ else
             return "Address is required.";
         if (string.IsNullOrWhiteSpace(NewStudent.ContactNumber))
             return "Contact number is required.";
+        if (NewStudent.GradeLevelId == null)
+            return "A grade level must be selected.";
         if (NewStudent.SchoolSectionId == null)
             return "A school section must be selected.";
-        return null; 
+        return null;
     }
+
 
     private Random rand = new Random();
 

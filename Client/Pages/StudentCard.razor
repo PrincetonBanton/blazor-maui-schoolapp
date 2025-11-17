@@ -7,6 +7,9 @@
 @using System.Text.Json
 @using SchoolApp.Shared.Models
 
+
+<PageHeader Title="Report Card" />
+
 @if (Student == null)
 {
     <LoadingSpinner />
@@ -105,6 +108,8 @@ else
             try
             {
                 AllStudents = await Http.GetFromJsonAsync<List<Student>>("api/student");
+                var jsonAllStudents = JsonSerializer.Serialize(AllStudents, new JsonSerializerOptions { WriteIndented = true });
+                await JS.InvokeVoidAsync("alert", $"Loaded All Students:\n{jsonAllStudents}");
             }
             catch (Exception ex)
             {
@@ -117,7 +122,10 @@ else
             {
                 Student = await Http.GetFromJsonAsync<Student>($"api/student/{StudentId}");
                 await LoadRelatedSchoolData();
+
                 var allSubjects = await Http.GetFromJsonAsync<List<Subject>>("api/subject") ?? new();
+
+                //Filter by GradeLevelId
                 if (Student?.GradeLevelId != null && Student.GradeLevelId != Guid.Empty)
                 {
                     Subjects = allSubjects
@@ -126,6 +134,7 @@ else
                 }
                 else
                 {
+                    await JS.InvokeVoidAsync("alert", "⚠️ Student has no valid GradeLevelId, no subjects filtered.");
                     Subjects = new();
                 }
 
@@ -134,10 +143,11 @@ else
             }
             catch (Exception ex)
             {
-                await JS.InvokeVoidAsync("alert", $"Failed to fetch data: {ex.Message}");
+                await JS.InvokeVoidAsync("alert", $"❌ Failed to fetch data: {ex.Message}");
             }
         }
     }
+
 
     private async Task LoadRelatedSchoolData()
     {

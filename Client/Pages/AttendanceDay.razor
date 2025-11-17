@@ -5,6 +5,7 @@
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 @using SchoolApp.Shared.Models
 
+<PageHeader Title="Attendance" />
 <SchoolContextSelector />
 
 @if (!SchoolContext.SelectedSchoolSectionId.HasValue)
