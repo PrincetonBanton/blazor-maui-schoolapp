@@ -4,8 +4,8 @@
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
 <div class="d-flex align-items-start mb-3 gap-3" style="width: 100%;">
-    <select class="form-control stylish-select" style="flex:1;" @onchange="OnSchoolYearChanged">
-        <option value="" disabled selected hidden>Select School Year</option>
+    <select class="form-control stylish-select select-highlight" style="flex:1;" @onchange="OnSchoolYearChanged">
+        <option value="" disabled selected hidden>School Year</option>
         @foreach (var sy in SchoolYears)
         {
             <option value="@sy.Id" selected="@(sy.Id == SchoolContext.SelectedSchoolYearId)">
@@ -14,8 +14,8 @@
         }
     </select>
 
-    <select class="form-control" style="flex:1;" @onchange="OnGradeLevelChanged">
-        <option value="" disabled selected hidden>Select Grade Level</option>
+    <select class="form-control select-highlight" style="flex:1;" @onchange="OnGradeLevelChanged">
+        <option value="" disabled selected hidden>Grade Level</option>
         @if (GradeLevels == null || !GradeLevels.Any())
         {
             <option disabled>No grade levels yet</option>
@@ -31,8 +31,8 @@
         }
     </select>
 
-    <select class="form-control" style="flex:1;" @onchange="OnSchoolSectionChanged">
-        <option value="" disabled selected hidden>Select School Section</option>
+    <select class="form-control select-highlight" style="flex:1;" @onchange="OnSchoolSectionChanged">
+        <option value="" disabled selected hidden>School Section</option>
         @if (SchoolSections == null || !SchoolSections.Any())
         {
             <option disabled>No school sections yet</option>
@@ -115,8 +115,6 @@
         SchoolContext.SetSchoolSections(SchoolSections);
     }
 
-    // ================== ONCHANGE ==================
-
     private async Task OnSchoolYearChanged(ChangeEventArgs e)
     {
         if (Guid.TryParse(e.Value?.ToString(), out var id))
@@ -145,7 +143,6 @@
         }
     }
 
-
     private Task OnSchoolSectionChanged(ChangeEventArgs e)
     {
         if (Guid.TryParse(e.Value?.ToString(), out var id))
@@ -156,4 +153,27 @@
     }
 
 }
+
+<style>
+    .select-highlight {
+        font-weight: 600;
+        font-size: 1.05rem;
+        color: darkblue;
+    }
+        .select-highlight:focus {
+            color: blue;
+            border-color: lightblue;
+            box-shadow: 0 0 4px rgba(0, 123, 255, 0.4);
+        }
+        .select-highlight option:hover {
+            background-color: #d9ecff !important; /* light blue */
+        }
+        .select-highlight option:checked {
+            font-weight: 700;
+            color: darkblue;
+            background-color: #cfe2ff; /* slightly stronger light blue */
+        }
+</style>
+
+
 

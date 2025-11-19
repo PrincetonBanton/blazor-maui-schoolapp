@@ -50,21 +50,21 @@ else
             </thead>
             <tbody>
                 @foreach (var component in Subject.Components
-                        .OrderBy(c =>
-                        {
-                            var name = c.Name.ToLower();
-                            if (name.Contains("written")) return 0;     // Written Works first
-                            if (name.Contains("quarter")) return 99;    // Quarterly Assessment last
-                            return 50;                                  // others in between
-                        })
-                        .ThenBy(c => c.Name)) // optional: alphabetic tie-break
+                        .OrderBy(c => 
+                        c.Name.ToLower().Contains("written") ? 0 : c.Name.ToLower().Contains("quarter") ? 99 : 50)
+                        .ThenBy(c => c.Name))
                 {
+                    // Get the number of subcomponents, if sub is null or none, still render 1 for the component row w/o the sub   
                     int comSubCount = component.Subcomponents?.Count ?? 1;
-
+                
+                
                     for (int i = 0; i < comSubCount; i++)
                     {
                         var comSub = component.Subcomponents?.ElementAtOrDefault(i);
+
+                        // Start a new table row for this subcomponent
                         <tr class="align-middle" style="height: 70px;">
+                            @*For the first subcomponent row, display component name and percentage with rowspan *@
                             @if (i == 0)
                             {
                                 <td rowspan="@comSubCount">@component.Name</td>
@@ -79,32 +79,61 @@ else
                                 @for (int gradingPeriod = 1; gradingPeriod <= 4; gradingPeriod++)
                                 {
                                     var loopGrading = gradingPeriod;
-                                    var subWithItems = SubGradingItems.SingleOrDefault(
-                                    g => g.SubjectId == SelectedSubjectId && g.SubcomponentId == comSub.Id && g.GradingPeriod == loopGrading);
 
-                                    int subItems = subWithItems?.ItemCount ?? 0;
+                                    // Try to find an existing SubGradingItem for this Subject, Subcomponent, and GradingPeriod
+                                    var subWithItems = SubGradingItems.SingleOrDefault(g => 
+                                           g.SubjectId == SelectedSubjectId && 
+                                           g.SubcomponentId == comSub.Id && 
+                                           g.GradingPeriod == loopGrading);
+
                                     Guid? subGradingItemId = subWithItems?.Id;
-
+                                    int subItems = subWithItems?.ItemCount ?? 0;
+                                    
                                     <td style="text-align:center">
+                                        @* If no items exist for this grading period, show "+" div to add new items *@
                                         @if (subItems == 0)
                                         {
-                                            <div style="display:inline-block; border:1px solid #ccc; border-radius:4px; padding:4px 8px; min-width:100px; text-align:center; cursor:pointer;"
+                                            <div title="Add Items" class="d-inline-flex align-items-center"
+                                                 style="width: 45px; height: 45px; display:flex; align-items:center; justify-content:center;
+                                                        border:1px solid #ccc; border-radius:50%;font-size:1.5rem; cursor:pointer; background:#f7f7f7;"
                                                  @onclick="() => OpenGradeInputModal(comSub.Id, comSub.Name, loopGrading, subItems)">
                                                 +
                                             </div>
+
                                         }
                                         else
                                         {
-                                            <div class="d-inline-flex align-items-center" style="gap: 10px;">
-                                                <div style="display:inline-block; border:1px solid #ccc; border-radius:4px; padding:4px 8px; min-width:100px; text-align:center; cursor:pointer;"
-                                                     @onclick="() => OpenGradeEditModal(SelectedSubjectId.Value, comSub.Id, loopGrading, subItems, subGradingItemId)">
-                                                    @subItems
+                                            {
+                                                // Call search logic
+                                                ScoreSearch(subGradingItemId, loopGrading);
+
+                                                <div class="d-inline-flex align-items-center">
+                                                    <div style="display:inline-block; border:1px solid #ccc; border-radius:4px; padding:4px 8px; margin-left:10px; min-width:130px;"
+                                                         @onclick="() => OpenGradeEditModal(SelectedSubjectId.Value, comSub.Id, loopGrading, subItems, subGradingItemId)">
+                                                        @subItems
+                                                    </div>
+
+                                                    @if (!HasScoreMatch)
+                                                    {
+                                                        <!-- Show "View Scores" button if NO existing scores -->
+                                                        <button title="View Scores"
+                                                                @onclick="() => NavigateToItemResult(subGradingItemId)"
+                                                                style="background:none; border:none; color:#f4b400; font-size:2rem; cursor:pointer; padding:0; margin:0; line-height:1;">
+                                                            📊
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <!-- Show "Edit Scores" button if scores already exist -->
+                                                        <button title="Edit Scores"
+                                                                @onclick="() => NavigateToItemResult(subGradingItemId)"
+                                                                style="background:none; border:none; color:#f4b400; font-size:2rem; cursor:pointer; padding:0; margin:0; line-height:1;">
+                                                            ✏️
+                                                        </button>
+                                                    }
                                                 </div>
-                                                <button class="btn btn-warning btn-sm"
-                                                        @onclick="() => NavigateToItemResult(subGradingItemId)">
-                                                    Scores
-                                                </button>
-                                            </div>
+                                            }
+
                                         }
                                     </td>
                                 }
@@ -116,6 +145,7 @@ else
                         </tr>
                     }
                 }
+
             </tbody>
         </table>
 
@@ -168,7 +198,7 @@ else
     private List<Subject> Subjects = new();
 
     private List<SubGradingItem> SubGradingItems { get; set; } = new();
-
+    private List<SubGradingScore> SubGradingScores { get; set; } = new();
 
     private bool ShowGradeInputModal = false;
     private Guid ModalSubcomponentId { get; set; }
@@ -186,6 +216,7 @@ else
             var subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubjectId}");
             await LoadSubjectAndItems(SubjectId);
         }
+        await LoadAllScores();
     }
 
     private async Task LoadSubjects()
@@ -235,6 +266,22 @@ else
         }
     }
 
+    private async Task LoadAllScores()
+    {
+        try
+        {
+            SubGradingScores =
+                await Http.GetFromJsonAsync<List<SubGradingScore>>("api/SubGradingScore")
+                ?? new();
+            var json = JsonSerializer.Serialize(SubGradingScores, new JsonSerializerOptions { WriteIndented = true });
+            JS.InvokeVoidAsync("alert", json);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("console.error", $"Failed to load scores: {ex.Message}");
+        }
+    }
+
     private async Task OnSubjectChanged(ChangeEventArgs e)
     {
         try
@@ -258,6 +305,7 @@ else
             await JS.InvokeVoidAsync("alert", $"Error fetching components: {ex.Message}");
         }
     }
+
     private void OpenGradeInputModal(Guid subcomponentId, string subcomponentName, int gradingPeriod, int currentItemCount)
     {
         ModalSubcomponentId = subcomponentId;
@@ -373,6 +421,21 @@ else
         {
             await JS.InvokeVoidAsync("alert", $"Failed to invalidate subject. Status: {response.StatusCode}");
         }
+    }
+
+
+    private bool HasScoreMatch { get; set; } = false;
+    private async Task ScoreSearch(Guid? subGradingItemId, int gradingPeriod)
+    {
+        if (subGradingItemId == null)
+            return;
+
+        var hasMatch = SubGradingScores.Any(s =>
+            s.SubGradingItemId == subGradingItemId &&
+            s.GradingPeriod == gradingPeriod
+        );
+
+        HasScoreMatch = hasMatch;
     }
 
 
