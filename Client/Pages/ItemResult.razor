@@ -7,7 +7,10 @@
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-<PageHeader Title="Students Scores" />
+<PageHeader 
+    Title="@( $"Student Scores - {SelectedGradeLevel?.LevelName} {SelectedSchoolSection?.SectionName}" )" 
+/>
+
 
 @if (SubGradingItem == null)
 {
@@ -15,46 +18,34 @@
 }
 else
 {
-    <div class="d-flex align-items-start mb-3">
-        <div class="me-3 d-flex align-items-center">
-            <select class="form-control" style="width: 300px;" disabled>
-                @if (SelectedSchoolYear != null)
-                {
-                    <option>@SelectedSchoolYear.SchoolYearName</option>
-                }
-                else
-                {
-                    <option>No School Year Selected</option>
-                }
-            </select>
-        </div>
-        <div class="me-3 d-flex align-items-center">
-            <select class="form-control" style="width: 300px;" disabled>
-                @if (SelectedGradeLevel != null)
-                {
-                    <option>@SelectedGradeLevel.LevelName</option>
-                }
-                else
-                {
-                    <option>No Grade Level Selected</option>
-                }
-            </select>
-        </div>
-        <div class="me-3 d-flex align-items-center">
-            <select class="form-control" style="width: 300px;" disabled>
-                @if (SelectedSchoolSection != null)
-                {
-                    <option>@SelectedSchoolSection.SectionName</option>
-                }
-                else
-                {
-                    <option>No School Section Selected</option>
-                }
-            </select>
-        </div>
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-center gap-3">
+        <select class="form-control" style="width: 300px;" disabled>
+            <option>@SelectedSchoolYear.SchoolYearName</option>
+        </select>
+        <select class="form-control" style="width: 300px;" disabled>
+            <option>@SelectedGradeLevel.LevelName</option>
+        </select>
+        <select class="form-control select-highlight" style="width: 300px;" @onchange="OnSectionChanged">
+            <option disabled selected hidden>Select Section</option>
+            @foreach (var ss in AllSections)
+            {
+                <option value="@ss.Id" selected="@(ss.Id == SelectedSchoolSection?.Id)">
+                    @ss.SectionName
+                </option>
+            }
+        </select>
     </div>
+    <a href="/subject/list" title="Back to List"
+        class="d-flex align-items-center justify-content-center text-white bg-primary rounded-circle shadow"
+        style="width: 50px; height: 50px; text-decoration: none; font-size: 1.5rem;">
+        ↩
+    </a>
 
-<div class="card shadow-sm mb-3 mt-5">
+</div>
+
+
+<div class="card shadow-sm mb-3">
     <div class="card-header bg-primary text-white">
         <div class="d-flex justify-content-between align-items-center">
             <div class="fw-bold fs-7 text-white">
@@ -75,11 +66,6 @@ else
                     <div>
                         @Component?.Name - @Subcomponent?.Name
                     </div>
-                    <a href="/subject/list" title="Back to List"
-                       class="d-flex align-items-center justify-content-center text-white bg-info rounded-circle shadow"
-                       style="width: 50px; height: 50px; text-decoration: none; font-size: 1.5rem;">
-                        ↩
-                    </a>
                 </div>
         </div>
     </div>
@@ -142,9 +128,11 @@ else
     private Subject? Subject;
     private Component? Component;
     private Subcomponent? Subcomponent;
+
     private List<Student> Students = new();
     private List<SubGradingItem> SubGradingItems = new();
     private List<SubGradingScore> SubGradingScores = new();
+    private List<SchoolSection> AllSections = new();
 
     private SchoolYear? SelectedSchoolYear;
     private GradeLevel? SelectedGradeLevel;
@@ -152,83 +140,99 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadSelectedContext();
+        await LoadStudents();
+
+        if (!await LoadSubGradingItem())
+            return;
+
+        await LoadScores();
+    }
+
+    private async Task LoadSelectedContext()
+    {
         if (SchoolContext.SelectedSchoolYearId.HasValue)
             SelectedSchoolYear = await Http.GetFromJsonAsync<SchoolYear>($"api/SchoolYear/{SchoolContext.SelectedSchoolYearId}");
+
         if (SchoolContext.SelectedGradeLevelId.HasValue)
             SelectedGradeLevel = await Http.GetFromJsonAsync<GradeLevel>($"api/GradeLevel/{SchoolContext.SelectedGradeLevelId}");
+
         if (SchoolContext.SelectedSchoolSectionId.HasValue)
             SelectedSchoolSection = await Http.GetFromJsonAsync<SchoolSection>($"api/SchoolSection/{SchoolContext.SelectedSchoolSectionId}");
 
-       var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
-
-        if (SchoolContext.SelectedSchoolSectionId.HasValue)
+        if (SelectedGradeLevel != null)
         {
-            Students = allStudents
-                .Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
-                .ToList();
+            AllSections = await Http.GetFromJsonAsync<List<SchoolSection>>(
+                $"api/SchoolSection/ByGradeLevel/{SelectedGradeLevel.Id}"
+            ) ?? new();
         }
-        else
-        {
-            Students = new(); // No section selected → no students loaded
-        }
+    }
 
+    private async Task LoadStudents()
+    {
+        var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+
+        Students = SchoolContext.SelectedSchoolSectionId.HasValue
+            ? allStudents.Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value).ToList()
+            : new List<Student>();
+    }
+
+    private async Task<bool> LoadSubGradingItem()
+    {
         if (SubGradingItemId == Guid.Empty)
         {
             await JS.InvokeVoidAsync("alert", "Invalid SubjectGradingItem ID.");
             NavigationManager.NavigateTo("/");
-            return;
+            return false;
         }
 
-        try
+        SubGradingItem = await Http.GetFromJsonAsync<SubGradingItem>($"api/SubGradingItem/{SubGradingItemId}");
+
+        if (SubGradingItem == null)
         {
-            SubGradingItem = await Http.GetFromJsonAsync<SubGradingItem>($"api/SubGradingItem/{SubGradingItemId}");
-            if (SubGradingItem == null)
+            await JS.InvokeVoidAsync("alert", "Subject Grading Item not found.");
+            NavigationManager.NavigateTo("/");
+            return false;
+        }
+
+        Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubGradingItem.SubjectId}");
+
+        if (Subject != null)
+        {
+            Component = Subject.Components?.FirstOrDefault(c => c.Subcomponents.Any(s => s.Id == SubGradingItem.SubcomponentId));
+            Subcomponent = Component?.Subcomponents.FirstOrDefault(s => s.Id == SubGradingItem.SubcomponentId);
+        }
+
+        return true;
+    }
+
+    private async Task LoadScores()
+    {
+        SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>(
+            $"api/SubGradingScore/ByItem/{SubGradingItem.Id}"
+        ) ?? new List<SubGradingScore>();
+
+        foreach (var student in Students)
+        {
+            if (!SubGradingScores.Any(s => s.StudentId == student.Id))
             {
-                await JS.InvokeVoidAsync("alert", "Subject Grading Item not found.");
-                NavigationManager.NavigateTo("/");
-                return;
-            }
+                var perfect = SubGradingItem.ItemCount;
+                var percentToItems = perfect > 0 ? (double)perfect / SubGradingItem.ItemCount * 100 : 0;
+                var percentToSubject = percentToItems *
+                    ((Subcomponent?.Percentage ?? 0) * (Component?.Percentage ?? 0)) / 10000;
 
-            Subject = await Http.GetFromJsonAsync<Subject>($"api/subject/{SubGradingItem.SubjectId}");
-            if (Subject != null)
-            {
-                Component = Subject.Components?.FirstOrDefault(c => c.Subcomponents.Any(s => s.Id == SubGradingItem.SubcomponentId));
-                Subcomponent = Component?.Subcomponents.FirstOrDefault(s => s.Id == SubGradingItem.SubcomponentId);
-            }
-
-            SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>(
-                $"api/SubGradingScore/ByItem/{SubGradingItem.Id}"
-            ) ?? new List<SubGradingScore>();
-
-                //Prepopulate missing scores with perfect marks
-                foreach (var student in Students)
+                SubGradingScores.Add(new SubGradingScore
                 {
-                    if (!SubGradingScores.Any(s => s.StudentId == student.Id))
-                    {
-                        var perfectScore = SubGradingItem.ItemCount;
-                        var itemCount = SubGradingItem.ItemCount;
-
-                        var percentToItems = itemCount > 0 ? (double)perfectScore / itemCount * 100 : 0;
-                        var percentToSubject = percentToItems * ((Subcomponent?.Percentage ?? 0) * (Component?.Percentage ?? 0)) / 10000;
-
-                        SubGradingScores.Add(new SubGradingScore
-                        {
-                            Id = Guid.NewGuid(),
-                            StudentId = student.Id,
-                            SubcomponentId = SubGradingItem.SubcomponentId,
-                            SubGradingItemId = SubGradingItem.Id,
-                            GradingPeriod = SubGradingItem.GradingPeriod,
-                            ScoreObtained = perfectScore,
-                            PercentSubject = percentToSubject,
-                            DateRecorded = DateTime.Now
-                        });
-                    }
-                }
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Error loading item results: {ex.Message}");
-            Console.WriteLine($"Error: {ex.Message}");
+                    Id = Guid.NewGuid(),
+                    StudentId = student.Id,
+                    SubcomponentId = SubGradingItem.SubcomponentId,
+                    SubGradingItemId = SubGradingItem.Id,
+                    GradingPeriod = SubGradingItem.GradingPeriod,
+                    ScoreObtained = perfect,
+                    PercentSubject = percentToSubject,
+                    DateRecorded = DateTime.Now
+                });
+            }
         }
     }
 
@@ -331,6 +335,50 @@ else
         {
             await JS.InvokeVoidAsync("alert", $"Error saving scores: {ex.Message}");
         }
+    }
+
+    private async Task OnSectionChanged(ChangeEventArgs e)
+    {
+        if (!Guid.TryParse(e.Value?.ToString(), out var newSectionId))
+            return;
+
+        SchoolContext.UpdateSchoolSection(newSectionId);
+        SelectedSchoolSection = AllSections.FirstOrDefault(s => s.Id == newSectionId);
+        var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+
+        Students = allStudents
+            .Where(s => s.SchoolSectionId == newSectionId)
+            .ToList();
+        SubGradingScores = await Http.GetFromJsonAsync<List<SubGradingScore>>(
+            $"api/SubGradingScore/ByItem/{SubGradingItem!.Id}"
+        ) ?? new List<SubGradingScore>();
+
+        // Prepopulate missing scores
+        foreach (var student in Students)
+        {
+            if (!SubGradingScores.Any(s => s.StudentId == student.Id))
+            {
+                var perfectScore = SubGradingItem.ItemCount;
+                var itemCount = SubGradingItem.ItemCount;
+
+                var percentToItems = itemCount > 0 ? (double)perfectScore / itemCount * 100 : 0;
+                var percentToSubject = percentToItems *
+                    ((Subcomponent?.Percentage ?? 0) * (Component?.Percentage ?? 0)) / 10000;
+
+                SubGradingScores.Add(new SubGradingScore
+                {
+                    Id = Guid.NewGuid(),
+                    StudentId = student.Id,
+                    SubcomponentId = SubGradingItem.SubcomponentId,
+                    SubGradingItemId = SubGradingItem.Id,
+                    GradingPeriod = SubGradingItem.GradingPeriod,
+                    ScoreObtained = perfectScore,
+                    PercentSubject = percentToSubject,
+                    DateRecorded = DateTime.Now
+                });
+            }
+        }
+        StateHasChanged();
     }
 
 }

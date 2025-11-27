@@ -67,6 +67,9 @@
     private async Task LoadSchoolYears()
     {
         SchoolYears = await Http.GetFromJsonAsync<List<SchoolYear>>("api/SchoolYear") ?? new();
+        SchoolYears = SchoolYears
+            .OrderBy(sy => sy.SchoolYearName)
+            .ToList();
         SchoolContext.SetSchoolYears(SchoolYears);
 
         //Automatically select the current school year if not yet selected
@@ -96,7 +99,9 @@
         GradeLevels = await Http.GetFromJsonAsync<List<GradeLevel>>(
             $"api/GradeLevel/BySchoolYear/{SchoolContext.SelectedSchoolYearId}"
         ) ?? new();
-
+        GradeLevels = GradeLevels
+            .OrderBy(gl => gl.LevelName)
+            .ToList();
         SchoolContext.SetGradeLevels(GradeLevels);
     }
 
@@ -111,7 +116,9 @@
         SchoolSections = await Http.GetFromJsonAsync<List<SchoolSection>>(
             $"api/SchoolSection/ByGradeLevel/{SchoolContext.SelectedGradeLevelId}"
         ) ?? new();
-
+        SchoolSections = SchoolSections
+            .OrderBy(sc => sc.SectionName)
+            .ToList();
         SchoolContext.SetSchoolSections(SchoolSections);
     }
 
@@ -154,26 +161,6 @@
 
 }
 
-<style>
-    .select-highlight {
-        font-weight: 600;
-        font-size: 1.05rem;
-        color: darkblue;
-    }
-        .select-highlight:focus {
-            color: blue;
-            border-color: lightblue;
-            box-shadow: 0 0 4px rgba(0, 123, 255, 0.4);
-        }
-        .select-highlight option:hover {
-            background-color: #d9ecff !important; /* light blue */
-        }
-        .select-highlight option:checked {
-            font-weight: 700;
-            color: darkblue;
-            background-color: #cfe2ff; /* slightly stronger light blue */
-        }
-</style>
 
 
 

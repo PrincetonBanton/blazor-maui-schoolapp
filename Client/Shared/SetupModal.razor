@@ -1,0 +1,389 @@
+﻿@using SchoolApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
+
+<div class="modal-body" style="max-height:80vh; overflow-y:auto; padding:2rem;">
+    <div class="d-flex flex-column align-items-center gap-4">
+
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-control" style="width: 300px; height: 50px; font-weight: 600; font-size: 1rem;"
+                    @onchange="OnSchoolYearChanged">
+                <option value="" disabled selected hidden>Select School Year</option>
+                @foreach (var sy in SchoolYears)
+                {
+                    <option value="@sy.Id" selected="@(sy.Id == SchoolContext.SelectedSchoolYearId)">
+                        @sy.SchoolYearName
+                    </option>
+                }
+            </select>
+            <button class="btn btn-primary rounded-circle" style="width:50px; height:50px;"
+                    @onclick="() => ShowYearModal = true">
+                +
+            </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-control" style="width: 300px; height: 50px; font-weight: 600; font-size: 1rem;"
+                    @onchange="OnGradeLevelChanged">
+                <option value="" disabled selected hidden>Select Grade Level</option>
+                @if (GradeLevels == null || !GradeLevels.Any())
+                {
+                    <option disabled>No grade levels yet</option>
+                }
+                else
+                {
+                    @foreach (var gl in GradeLevels)
+                    {
+                        <option value="@gl.Id" selected="@(gl.Id == SchoolContext.SelectedGradeLevelId)">
+                            @gl.LevelName
+                        </option>
+                    }
+                }
+            </select>
+            <button class="btn btn-primary rounded-circle" style="width:50px; height:50px;"
+                    @onclick="() => ShowLevelModal = true">
+                +
+            </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <select class="form-control" style="width: 300px; height: 50px; font-weight: 600; font-size: 1rem;"
+                    @onchange="OnSchoolSectionChanged">
+                <option value="" disabled selected hidden>Select School Section</option>
+                @if (SchoolSections == null || !SchoolSections.Any())
+                {
+                    <option disabled>No school sections yet</option>
+                }
+                else
+                {
+                    @foreach (var ss in SchoolSections)
+                    {
+                        <option value="@ss.Id" selected="@(ss.Id == SchoolContext.SelectedSchoolSectionId)">
+                            @ss.SectionName
+                        </option>
+                    }
+                }
+            </select>
+            <button class="btn btn-primary rounded-circle" style="width:50px; height:50px;"
+                    @onclick="() => ShowSectionModal = true">
+                +
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ================== Modals ================== -->
+@if (ShowYearModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Setup School Year</h5>
+                    <button type="button" class="btn-close" @onclick="() => ShowYearModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" @bind="StartDate" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" @bind="EndDate" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" style="width:150px;" @onclick="() => ShowYearModal = false">Close</button>
+                    <button class="btn btn-primary" style="width:150px;" @onclick="SaveSchoolYear">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowLevelModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Grade Level</h5>
+                    <button type="button" class="btn-close" @onclick="() => ShowLevelModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">School Year</label>
+                        <input type="text" class="form-control" value="@SchoolContext.GetSelectedSchoolYearName()" disabled />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Grade Level Name</label>
+                        <input type="text" class="form-control" @bind="NewGradeLevelName" placeholder="e.g. Grade 1" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" style="width:150px;" @onclick="() => ShowLevelModal = false">Close</button>
+                    <button class="btn btn-primary" style="width:150px;" @onclick="SaveGradeLevel">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (ShowSectionModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">School Section</h5>
+                    <button type="button" class="btn-close" @onclick="() => ShowSectionModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">School Year</label>
+                        <input type="text" class="form-control" value="@SchoolContext.GetSelectedSchoolYearName()" disabled />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Grade Level</label>
+                        <input type="text" class="form-control" value="@SchoolContext.GetSelectedGradeLevelName()" disabled />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Section Name</label>
+                        <input type="text" class="form-control" @bind="NewSchoolSectionName" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" style="width:150px;" @onclick="() => ShowSectionModal = false">Close</button>
+                    <button class="btn btn-primary" style="width:150px;" @onclick="SaveSchoolSection">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<SchoolYear> SchoolYears = new();
+    private List<GradeLevel> GradeLevels = new();
+    private List<SchoolSection> SchoolSections = new();
+
+    private bool ShowYearModal, ShowLevelModal, ShowSectionModal;
+    private DateTime StartDate = DateTime.Today;
+    private DateTime EndDate = DateTime.Today.AddMonths(10);
+    private string NewGradeLevelName = string.Empty;
+    private string NewSchoolSectionName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSchoolYears();
+        if (SchoolContext.SelectedSchoolYearId.HasValue)
+            await LoadGradeLevel();
+        if (SchoolContext.SelectedGradeLevelId.HasValue)
+            await LoadSchoolSection();
+    }
+
+    // ================== LOADERS ==================
+
+    private async Task LoadSchoolYears()
+    {
+        SchoolYears = await Http.GetFromJsonAsync<List<SchoolYear>>("api/SchoolYear") ?? new();
+        SchoolContext.SetSchoolYears(SchoolYears);
+    }
+
+    private async Task LoadGradeLevel()
+    {
+        if (SchoolContext.SelectedSchoolYearId == null)
+        {
+            GradeLevels = new();
+            return;
+        }
+
+        GradeLevels = await Http.GetFromJsonAsync<List<GradeLevel>>(
+            $"api/GradeLevel/BySchoolYear/{SchoolContext.SelectedSchoolYearId}"
+        ) ?? new();
+
+        SchoolContext.SetGradeLevels(GradeLevels);
+    }
+
+    private async Task LoadSchoolSection()
+    {
+        if (SchoolContext.SelectedGradeLevelId == null)
+        {
+            SchoolSections = new();
+            return;
+        }
+
+        SchoolSections = await Http.GetFromJsonAsync<List<SchoolSection>>(
+            $"api/SchoolSection/ByGradeLevel/{SchoolContext.SelectedGradeLevelId}"
+        ) ?? new();
+
+        SchoolContext.SetSchoolSections(SchoolSections);
+    }
+
+    // ================== ONCHANGE ==================
+
+    private async Task OnSchoolYearChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SchoolContext.UpdateSchoolYear(id);
+            await LoadGradeLevel();
+        }
+    }
+
+    private async Task OnGradeLevelChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SchoolContext.UpdateGradeLevel(id);
+            await LoadSchoolSection();
+        }
+    }
+
+    private Task OnSchoolSectionChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var id))
+        {
+            SchoolContext.UpdateSchoolSection(id);
+        }
+        return Task.CompletedTask;
+    }
+
+    // ================== SAVE ==================
+
+    private async Task SaveSchoolYear()
+    {
+        var duplicate = SchoolYears.FirstOrDefault(sy => sy.StartDate.Year == StartDate.Year);
+        if (duplicate != null)
+        {
+            var confirm = await JS.InvokeAsync<bool>("confirm",
+                $"A school year starting {StartDate.Year} already exists ({duplicate.SchoolYearName}). Update it?");
+
+            if (confirm)
+            {
+                duplicate.StartDate = StartDate;
+                duplicate.EndDate = EndDate;
+                duplicate.SchoolYearName = $"{StartDate.Year}-{EndDate.Year}";
+
+                var response = await Http.PutAsJsonAsync($"api/SchoolYear/{duplicate.Id}", duplicate);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await LoadSchoolYears();
+                    SchoolContext.UpdateSchoolYear(duplicate.Id);
+                    await JS.InvokeVoidAsync("alert", $"School Year {duplicate.SchoolYearName} updated!");
+                }
+                else
+                {
+                    await JS.InvokeVoidAsync("alert", "Error updating school year.");
+                }
+            }
+        }
+        else
+        {
+            var schoolYear = new SchoolYear
+            {
+                Id = Guid.NewGuid(),
+                StartDate = StartDate,
+                EndDate = EndDate,
+                SchoolYearName = $"{StartDate.Year}-{EndDate.Year}"
+            };
+
+            var response = await Http.PostAsJsonAsync("api/SchoolYear", schoolYear);
+
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadSchoolYears();
+                SchoolContext.UpdateSchoolYear(schoolYear.Id);
+                await JS.InvokeVoidAsync("alert", $"School Year {schoolYear.SchoolYearName} saved!");
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "Error saving school year.");
+            }
+        }
+
+        ShowYearModal = false;
+    }
+
+    private async Task SaveGradeLevel()
+    {
+        if (SchoolContext.SelectedSchoolYearId == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Please select a School Year first.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(NewGradeLevelName))
+        {
+            await JS.InvokeVoidAsync("alert", "Please enter a grade level name.");
+            return;
+        }
+
+        var gradeLevel = new GradeLevel
+        {
+            Id = Guid.NewGuid(),
+            SchoolYearId = SchoolContext.SelectedSchoolYearId.Value,
+            LevelName = NewGradeLevelName
+        };
+
+        var response = await Http.PostAsJsonAsync("api/GradeLevel", gradeLevel);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadGradeLevel();
+            SchoolContext.UpdateGradeLevel(gradeLevel.Id);
+            await JS.InvokeVoidAsync("alert", $"Grade Level {gradeLevel.LevelName} saved!");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Error saving grade level.");
+        }
+
+        ShowLevelModal = false;
+        NewGradeLevelName = string.Empty;
+    }
+
+    private async Task SaveSchoolSection()
+    {
+        if (SchoolContext.SelectedGradeLevelId == null)
+        {
+            await JS.InvokeVoidAsync("alert", "Please select a Grade Level first.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(NewSchoolSectionName))
+        {
+            await JS.InvokeVoidAsync("alert", "Please enter a School Section name.");
+            return;
+        }
+
+        var schoolSection = new SchoolSection
+        {
+            Id = Guid.NewGuid(),
+            GradeLevelId = SchoolContext.SelectedGradeLevelId.Value,
+            SectionName = NewSchoolSectionName
+        };
+
+        var response = await Http.PostAsJsonAsync("api/SchoolSection", schoolSection);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadSchoolSection();
+            SchoolContext.UpdateSchoolSection(schoolSection.Id);
+            await JS.InvokeVoidAsync("alert", $"School Section {schoolSection.SectionName} saved!");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Error saving school section.");
+        }
+
+        ShowSectionModal = false;
+        NewSchoolSectionName = string.Empty;
+    }
+}

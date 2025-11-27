@@ -1,0 +1,21 @@
+﻿.select-highlight {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: darkblue;
+}
+
+    .select-highlight:focus {
+        color: blue;
+        border-color: lightblue;
+        box-shadow: 0 0 4px rgba(0, 123, 255, 0.4);
+    }
+
+    .select-highlight option:hover {
+        background-color: #d9ecff !important;
+    }
+
+    .select-highlight option:checked {
+        font-weight: 700;
+        color: darkblue;
+        background-color: #cfe2ff;
+    }

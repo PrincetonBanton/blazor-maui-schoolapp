@@ -17,11 +17,10 @@
 else
 {
     <div class="card shadow-sm border-0 rounded-3 p-3; margin: auto;">
-        <div class="d-flex align-items-center">
+        <div class="d-flex align-items-start">
             <img src="id_pic.png" alt="Student Photo"
                  class="rounded border me-3"
                  style="width: 150px; height: 150px; object-fit: cover;" />
-
             <div class="flex-grow-1">
                 <h4 class="fw-bold mb-1 text-primary">@Student.FullName</h4>
                 <p class="mb-1"><strong>Birthdate:</strong> @Student.DateOfBirth.ToString("MMMM dd, yyyy")</p>
@@ -30,11 +29,19 @@ else
                 <p class="mb-1"><strong>Guardian:</strong> Parents Name</p>
                 <p class="mb-1"><strong>Contact#:</strong> @Student.ContactNumber</p>
             </div>
+            <div class="d-flex flex-column justify-content-end" style="height: 150px;">
+                <a href="/students/list" title="Student List"
+                   class="d-flex align-items-center justify-content-center text-white bg-primary rounded-circle shadow"
+                   style="width: 50px; height: 50px; text-decoration: none; font-size: 1.5rem;">
+                    📑
+                </a>
+            </div>
+
         </div>
 
         <div class="card-header bg-primary text-white fw-bold d-flex justify-content-between align-items-center mt-2 py-3">
-            <span class="fs-5">Grade Level: @CurrentGradeLevel</span>
-            <span class="fs-5">Section: @CurrentSection</span>
+            <span class="fs-5">@CurrentGradeLevel - @CurrentSection </span>
+            @* <span class="fs-5">Section: @CurrentSection</span> *@
         </div>
     </div>
 
@@ -58,6 +65,7 @@ else
                     <th style="width:10%;">4th Grading</th>
                     <th style="width:10%;">Final Grade</th>
                     <th style="width:30%;">Remarks</th>
+                    <th style="width:10%;">Action</th> <!-- New column -->
                 </tr>
             </thead>
             <tbody>
@@ -68,18 +76,39 @@ else
                     var third = GetStudentScore(subject.Id, Student.Id, 3);
                     var fourth = GetStudentScore(subject.Id, Student.Id, 4);
 
+
+                    string remarks;
+                    string remarksClass;
                     var finalGrade = (first + second + third + fourth) / 4;
-                    var remarks = finalGrade >= 75 ? "Passed" : "Failed";
-                    var remarksClass = finalGrade >= 75 ? "text-success" : "text-danger";
+                    if (finalGrade == 0)
+                    {
+                        remarks = "No Grades"; remarksClass = "text-secondary";   // Gray
+                    }
+                    else if (finalGrade >= 75)
+                    {
+                        remarks = "Passed";  remarksClass = "text-success";     // Green
+                    }
+                    else
+                    {
+                        remarks = "Failed"; remarksClass = "text-danger";      // Red
+                    }
 
                     <tr>
-                        <td>@subject.Name</td>
-                        <td class="text-center">@first</td>
-                        <td class="text-center">@second</td>
-                        <td class="text-center">@third</td>
-                        <td class="text-center">@fourth</td>
-                        <td class="text-center"><strong>@finalGrade</strong></td>
-                        <td class="text-center @remarksClass">@remarks</td>
+                        <td class="align-middle fw-bold">@subject.Name</td>
+                        <td class="text-center align-middle">@first</td>
+                        <td class="text-center align-middle">@second</td>
+                        <td class="text-center align-middle">@third</td>
+                        <td class="text-center align-middle">@fourth</td>
+                        <td class="text-center align-middle"><strong>@finalGrade</strong></td>
+                        <td class="text-center align-middle @remarksClass">@remarks</td>
+                        <td class="text-center align-middle">
+                            <a href="@($"/subject/template/{subject.Id}")"
+                               title="Go to Subject Template"
+                               class="d-flex align-items-center justify-content-center text-white bg-primary rounded-circle shadow"
+                               style="width: 30px; height: 30px; font-size: 1rem; text-decoration: none; line-height:1;">
+                                📝
+                            </a>
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -191,4 +220,11 @@ else
             NavigationManager.NavigateTo($"/students/card/{selectedId}");
         }
     }
+
+    private void NavigateToSubjectTemplate(Guid subjectId)
+    {
+        NavigationManager.NavigateTo($"/subject/template/{subjectId}");
+    }
+
+
 }

@@ -1,82 +1,113 @@
 ﻿@page "/attendance/calendar"
-@using System.Text.Json
-@using SchoolApp.Shared.Models
 @using SchoolApp.Client.Shared
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
+<PageHeader Title="School Year" />
 
-<PageHeader Title="Calendar" />
-<SchoolContextSelector />
-
-<div class="mt-3 d-flex align-items-center">
-    <div class="ms-auto">
-        <button title="Toggle Calendar"
-                @onclick="ToggleMonthCalendar"
-                style="background:none; border:none; font-size:3rem; cursor:pointer; margin-bottom:0">
-            @(ShowMonthCalendar ? "📅" : "🗓️")
-        </button>
-    </div>
+<div style="display: flex; gap: 0rem; margin-bottom: 10px">
+    <button title="Toggle Calendar" @onclick="ToggleMonthCalendar">
+        @(ShowMonthCalendar ? "📅" : "🗓️")
+    </button>
+    <button title="Toggle Now" @onclick="ResetToToday">
+        🕒
+    </button>
 </div>
 
-<div class="month-calendar-wrapper @(ShowMonthCalendar ? "show" : "hide")">
+<div class="year-view @(ShowMonthCalendar ? "hide" : "show")">
     <CalendarYear SelectedMonth="@SelectedMonth"
+                  SelectedYear="@SelectedYear"
                   SelectedDay="@SelectedDay"
                   OnDayClicked="OnDayClicked"
+                  OnMonthSelected="HandleMonthSelected"
                   SchoolYearStart="@SchoolContext.GetSelectedSchoolYearStart()"
                   SchoolYearEnd="@SchoolContext.GetSelectedSchoolYearEnd()" />
 </div>
 
-<CalendarMonth DaysInMonth="DaysInMonth"
-               StartOffset="StartOffset"
-               EndOffset="EndOffset"
-               OnDayClicked="OnDayClicked" />
+<div class="month-view @(ShowMonthCalendar ? "show" : "hide")">
+    <CalendarMonth DaysInMonth="DaysInMonth"
+                   StartOffset="StartOffset"
+                   EndOffset="EndOffset"
+                   OnDayClicked="OnDayClicked" />
+</div>
 
 <style>
-    .month-calendar-wrapper {
-        max-height: 0;
-        opacity: 0;
-        overflow: hidden;
-        transition: all 0.5s ease; 
+    button {
+        background: none;
+        border: none;
+        font-size: 3rem;
+        cursor: pointer;
+        padding: 0;
+        line-height: 1; /* remove extra vertical spacing */
+        display: inline-flex; /* remove inline-block extra spacing */
+        align-items: center;
+        justify-content: center;
     }
 
-        .month-calendar-wrapper.show {
-            max-height: 1000px; 
-            opacity: 1;
+    .year-view,
+    .month-view {
+        transition: transform 0.35s ease, opacity 0.35s ease;
+        opacity: 1;
+        transform: scale(1);
+        position: relative;
+    }
+
+        .year-view.hide,
+        .month-view.hide {
+            transform: scale(0.95);
+            opacity: 0;
+            position: absolute;
+            pointer-events: none;
+            height: 0;
+            overflow: hidden;
         }
 
+        .year-view.show,
+        .month-view.show {
+            transform: scale(1);
+            opacity: 1;
+            position: relative;
+            pointer-events: auto;
+            height: auto;
+        }
 </style>
 
 @code {
-    private List<DateTime> DaysInMonth { get; set; } = new();
-    private int _selectedMonth = DateTime.Now.Month;
+    public int SelectedMonth { get; set; } = DateTime.Now.Month;
+    public int SelectedYear { get; set; } = DateTime.Now.Year;
     private DateTime? SelectedDay { get; set; }
-    private int StartOffset { get; set; } = 0;
-    private int EndOffset { get; set; } = 0;
-    private bool ShowMonthCalendar { get; set; } = false;
+
+    private List<DateTime> DaysInMonth { get; set; } = new();
+    private int StartOffset { get; set; }
+    private int EndOffset { get; set; }
+
+    private bool ShowMonthCalendar { get; set; } = true;
 
     protected override void OnInitialized()
     {
         LoadCalendar();
         SchoolContext.OnContextChanged += StateHasChanged;
     }
+
     public void Dispose()
     {
-        SchoolContext.OnContextChanged -= StateHasChanged; // cleanup
+        SchoolContext.OnContextChanged -= StateHasChanged;
     }
 
     private void LoadCalendar()
     {
-        DaysInMonth = Enumerable.Range(1, DateTime.DaysInMonth(DateTime.Now.Year, SelectedMonth))
-            .Select(day => new DateTime(DateTime.Now.Year, SelectedMonth, day))
+        DaysInMonth = Enumerable
+            .Range(1, DateTime.DaysInMonth(SelectedYear, SelectedMonth))
+            .Select(d => new DateTime(SelectedYear, SelectedMonth, d))
             .ToList();
 
         var firstDay = DaysInMonth.First();
         var lastDay = DaysInMonth.Last();
-        StartOffset = (int)firstDay.DayOfWeek;  // Sunday = 0
-        EndOffset = 6 - (int)lastDay.DayOfWeek; // Fill up to Saturday
+
+        StartOffset = (int)firstDay.DayOfWeek;
+        EndOffset = 6 - (int)lastDay.DayOfWeek;
     }
 
     private void ToggleMonthCalendar()
@@ -84,27 +115,32 @@
         ShowMonthCalendar = !ShowMonthCalendar;
     }
 
-    private void OnMiniDayClicked(DateTime day)
-    {
-        SelectedDay = day;
-        OnDayClicked(day); // still navigate if you want
-    }
-     
-    private int SelectedMonth
-    {
-        get => _selectedMonth;
-        set
-        {
-            if (_selectedMonth != value)
-            {
-                _selectedMonth = value;
-                LoadCalendar();
-            }
-        }
-    }
-
     private void OnDayClicked(DateTime day)
     {
         NavigationManager.NavigateTo($"/attendance/day/{day:ddMMyyyy}");
     }
+
+    private async Task HandleMonthSelected((int Month, int Year) data)
+    {
+        SelectedMonth = data.Month;
+        SelectedYear = data.Year;
+        LoadCalendar();
+        ShowMonthCalendar = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ResetToToday()
+    {
+        var today = DateTime.Now;
+        SelectedYear = today.Year;
+        SelectedMonth = today.Month;
+        SelectedDay = today;
+        LoadCalendar();
+        ShowMonthCalendar = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+
 }
+

@@ -1,20 +1,22 @@
 ﻿@using Microsoft.AspNetCore.Components
 
-<div class="month-calendar">
+<div class="calendar-container">
     @if (DaysInMonth.Any())
     {
-        <div class="calendar-month-header">
-            @DaysInMonth.First().ToString("MMMM yyyy")
+        <div class="month-header"
+             style="background-color:@(DaysInMonth.First().Month == DateTime.Now.Month && DaysInMonth.First().Year == DateTime.Now.Year ? "royalblue" : "gray")">
+            @DaysInMonth.First().ToString("MMMM yyyy").ToUpper()
         </div>
 
         <div class="calendar-grid">
-            <div class="calendar-header">SUN</div>
-            <div class="calendar-header">MON</div>
-            <div class="calendar-header">TUE</div>
-            <div class="calendar-header">WED</div>
-            <div class="calendar-header">THU</div>
-            <div class="calendar-header">FRI</div>
-            <div class="calendar-header">SAT</div>
+            <!-- Day headers -->
+            <div class="day-header">SUN</div>
+            <div class="day-header">MON</div>
+            <div class="day-header">TUE</div>
+            <div class="day-header">WED</div>
+            <div class="day-header">THU</div>
+            <div class="day-header">FRI</div>
+            <div class="day-header">SAT</div>
 
             <!-- Empty slots before first day -->
             @for (int i = 0; i < StartOffset; i++)
@@ -41,16 +43,17 @@
 </div>
 
 <style>
-    .month-calendar {
-        display: flex;
-        flex-direction: column;
+    .calendar-container {
+        width: 100%;
+        margin: 5px;
     }
-
-    .calendar-month-header {
-        padding: 5px 5px 5px 5px;
-        text-align: center;
-        font-size: 1.2rem;
+    .month-header {
         font-weight: bold;
+        text-align: center;
+        padding: 10px;
+        font-size: 1.3rem;
+        color: white;
+        border: 1px solid #ccc;
     }
 
     .calendar-grid {
@@ -60,13 +63,14 @@
         border: 1px solid #ccc;
     }
 
-    .calendar-header {
-        color: white;
+    .day-header {
         font-weight: bold;
         text-align: center;
-        padding: 10px;
-        border: 1px solid #ccc;
+        padding: 5px;
+        font-size: 0.85rem;
+        color: white;
         background-color: royalblue;
+        border: 1px solid #ccc;
     }
 
     .calendar-day {
@@ -74,24 +78,24 @@
         border: 1px solid #ccc;
         text-align: center;
         padding: 10px;
-        min-height: 100px;
+        min-height: 80px;
         cursor: pointer;
     }
 
-        .calendar-day:hover {
-            background-color: #f0f0f0;
-        }
+    .calendar-day:hover {
+        background-color: #f0f0f0;
+    }
 
-        .calendar-day.empty {
-            background-color: #fafafa;
-            border: 1px solid #ccc;
-            cursor: default;
-        }
+    .calendar-day.empty {
+        background-color: #fafafa;
+        border: 1px solid #ccc;
+        cursor: default;
+    }
 
-        .calendar-day.sunday {
-            color: red;
-            font-weight: bold;
-        }
+    .calendar-day.sunday {
+        color: red;
+        font-weight: bold;
+    }
 
     .calendar-day-number {
         font-size: 1.5rem;

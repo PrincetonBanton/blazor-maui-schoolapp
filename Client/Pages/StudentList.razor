@@ -12,14 +12,8 @@
      !SchoolContext.SelectedGradeLevelId.HasValue ||
      !SchoolContext.SelectedSchoolSectionId.HasValue)
 {
-    <div class="container-fluid d-flex justify-content-center mt-3">
-        <a class="navbar-brand mx-auto" href="">
-            <img src="sample_logo.png" alt="School Logo" width="130" height="130" class="d-inline-block align-top" />
-        </a>
-    </div>
-    <div class="alert mt-1 text-center">
-        No Available Data - Select Grade Level or Section
-    </div>
+    <NoDataLogo />
+
 }
 else if (students == null)
 {
@@ -41,8 +35,7 @@ else if (!students.Any())
 else
 {
     <div class="col-6 mb-3">
-        <button class="btn btn-primary rounded-circle"
-                style="width: 50px; height: 50px; font-size: larger;"
+        <button class="btn btn-primary rounded-circle" style="width: 50px; height: 50px; font-size: larger;"
                 @onclick="ShowStudentModal">
             +
         </button>

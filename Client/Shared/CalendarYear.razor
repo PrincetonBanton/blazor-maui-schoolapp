@@ -1,4 +1,4 @@
-﻿@using Microsoft.AspNetCore.Components
+﻿@inject IJSRuntime JS
 
 <div class="year-calendar">
     @if (SchoolYearStart != null && SchoolYearEnd != null)
@@ -17,10 +17,15 @@
             var startOffset = (int)firstDay.DayOfWeek;
             var lastDay = daysInMonth.Last();
             var endOffset = 6 - (int)lastDay.DayOfWeek;
+            var monthCopy = current.Month;   
+            var yearCopy = current.Year;     
 
-            <div class="year-month @(current.Month == SelectedMonth && current.Year == DateTime.Now.Year ? "selected" : "") in-schoolyear">
-                <div class="month-title">
-                    @($"{current:MMMM yyyy}")
+            <div class="year-month @(monthCopy == SelectedMonth && yearCopy == DateTime.Now.Year ? "selected" : "") in-schoolyear"
+                 @onclick="() => OnMonthClicked(monthCopy, yearCopy)">
+
+                <div class="month-title"
+                     style="background-color:@(monthCopy == DateTime.Now.Month && yearCopy == DateTime.Now.Year ? "royalblue" : "gray")">
+                    @current.ToString("MMMM yyyy")
                 </div>
 
                 <div class="mini-calendar">
@@ -74,29 +79,21 @@
     }
 
     .year-month {
-        padding: 10px;
+        margin: 5px;
         text-align: center;
         font-weight: bold;
-        background: #fff;
-        transition: background-color 0.2s;
+        border: 1px solid #ccc;
     }
-
         .year-month:hover {
             background-color: #e2e6ea;
         }
 
-        .year-month.selected {
-            @* background-color: royalblue; *@
-            @* color: white; *@
-        }
-
-
     .month-title {
+        padding: 5px;
         text-align: center;
         font-weight: bold;
-        margin-bottom: 5px;
+        color: white;
     }
-
     .mini-calendar {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
@@ -106,17 +103,16 @@
 
     .mini-header {
         font-weight: bold;
-        background: royalblue;
-        color: white;
+@*         background: royalblue;
+        color: white; *@
         padding: 2px;
         border: 1px solid #ccc;
     }
 
     .mini-day {
-        border: 1px solid #ccc;
         padding: 3px;
-        transition: background-color 0.2s;
         cursor: pointer;
+        border: 1px solid #ccc;
     }
 
         .mini-day.today {
@@ -130,8 +126,10 @@
 
 @code {
     [Parameter] public int SelectedMonth { get; set; }
+    [Parameter] public int SelectedYear { get; set; }
     [Parameter] public DateTime? SelectedDay { get; set; }
     [Parameter] public EventCallback<DateTime> OnDayClicked { get; set; }
+    [Parameter] public EventCallback<(int Month, int Year)> OnMonthSelected { get; set; }
 
     [Parameter] public DateTime? SchoolYearStart { get; set; }
     [Parameter] public DateTime? SchoolYearEnd { get; set; }
@@ -140,4 +138,10 @@
     {
         OnDayClicked.InvokeAsync(day);
     }
+    private async Task OnMonthClicked(int month, int year)
+    {
+        await OnMonthSelected.InvokeAsync((month, year));
+    }
+
+
 }
