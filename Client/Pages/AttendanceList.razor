@@ -1,11 +1,12 @@
-﻿@page "/attendance/day/{dateString}"
+﻿@page "/attendance/list/{dateString}"
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 @using SchoolApp.Shared.Models
 
-<PageHeader Title="Attendance" />
+@* <PageHeader Title="Attendance" />
+ *@<PageHeader Title="Attendance" OnSearch="HandleSearch" />
 <SchoolContextSelector />
 
 @if (!SchoolContext.SelectedSchoolSectionId.HasValue)
@@ -146,7 +147,7 @@ else
         await LoadStudentsAndAttendanceAsync();
     }
 
-  
+
     private async Task LoadStudentsAndAttendanceAsync()
     {
         try
@@ -283,6 +284,28 @@ else
     {
         RemarksMap[ModalStudentId] = ModalRemark;
         ShowRemarkModal = false;
+    }
+    private string SearchKeyword = "";
+    private async Task HandleSearch(string keyword)
+    {
+        SearchKeyword = keyword.Trim().ToLower();
+
+        // If empty → restore full list
+        if (string.IsNullOrWhiteSpace(SearchKeyword))
+        {
+            await LoadStudentsAndAttendanceAsync();
+            StateHasChanged();
+            return;
+        }
+
+        Students = Students
+            .Where(s =>
+            (
+                $"{s.LastName} {s.FirstName} {s.MiddleName}".ToLower().Contains(SearchKeyword)
+            ))
+            .ToList();
+
+        StateHasChanged();
     }
 
 }

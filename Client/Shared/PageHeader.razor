@@ -1,25 +1,23 @@
 ﻿@using SchoolApp.Client.Shared
+@inject IJSRuntime JS
 
 <div class="d-flex justify-content-between align-items-center mb-3 w-100"
      style="padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
+
     <div style="font-size: 1.6rem; font-weight: 600; padding-top: 10px; color:darkblue">
         @Title
     </div>
 
     <div class="d-flex align-items-center" style="gap: 10px;">
         <div class="position-relative" style="width: 500px;">
-            <input type="text" class="form-control pe-5" placeholder="Search..." />
+            <input type="text" class="form-control pe-5" placeholder="Search..."
+                   @bind="SearchText" @oninput="OnSearchChanged">
             <span class="position-absolute top-50 end-0 translate-middle-y me-3"
-                  style="font-size: 1.2rem; color: gray; cursor: pointer;">
+                  style="font-size: 1.5rem; color: gray; cursor: pointer;"
+                  @onclick="TriggerUniversalSearch">
                 🔍
             </span>
         </div>
-
-        @* <a href="/setup" title="Setup"
-           class="d-flex text-white bg-primary rounded-circle shadow align-items-center justify-content-center"
-           style="width: 35px; height: 35px; text-decoration: none; font-size: 1.1rem;">
-            ⚙️
-        </a> *@
 
         <button title="Setup"
                 @onclick="() => ShowSetupModal = true"
@@ -38,7 +36,6 @@
                 John Doe
             </div>
         </div>
-
     </div>
 </div>
 
@@ -47,7 +44,7 @@
     <div class="modal-backdrop fade show"></div>
 
     <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-l"> <!-- XL to fit your long setup -->
+        <div class="modal-dialog">
             <div class="modal-content shadow-lg">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">Setup</h5>
@@ -60,7 +57,33 @@
 }
 
 @code {
-    [Parameter]
-    public string Title { get; set; } = "";
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public EventCallback<string> OnSearch { get; set; }
+
+    private string SearchText = "";
     private bool ShowSetupModal = false;
+    private System.Timers.Timer debounceTimer;
+
+    private async Task TriggerUniversalSearch()
+    {
+        string url = await JS.InvokeAsync<string>("eval", "window.location.href");
+
+        await OnSearch.InvokeAsync(SearchText);
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        SearchText = e.Value?.ToString() ?? "";
+
+        // debounce for 300ms (so it doesn't trigger per keystroke)
+        debounceTimer?.Stop();
+        debounceTimer = new System.Timers.Timer(300);
+        debounceTimer.Elapsed += async (_, __) =>
+        {
+            debounceTimer.Stop();
+            await InvokeAsync(() => OnSearch.InvokeAsync(SearchText));
+        };
+        debounceTimer.Start();
+    }
+
 }
