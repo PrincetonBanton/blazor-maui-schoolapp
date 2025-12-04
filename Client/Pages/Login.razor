@@ -1,0 +1,111 @@
+﻿@page "/login"
+@using System.Text.Json
+@using SchoolApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-logo">
+            <img src="sample_logo.png" alt="Logo" width="88" height="88" />
+        </div>
+
+        <h5 class="text-center mb-3">Teacher's Tool — Login</h5>
+
+        <EditForm Model="model" OnValidSubmit="HandleSubmit">
+            <div class="mb-2">
+                <label class="form-label">Username</label>
+                <InputText class="form-control" @bind-Value="model.Username" placeholder="admin" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <InputText class="form-control" type="password" @bind-Value="model.Password" placeholder="12345" />
+            </div>
+
+            <div class="d-grid">
+                <button class="btn btn-primary" type="submit">Login</button>
+            </div>
+        </EditForm>
+
+        <div class="login-footer mt-3">
+            This is a temporary front-end-only login. After clicking <strong>Login</strong> you will be redirected to the dashboard.
+        </div>
+    </div>
+</div>
+<style>
+    .login-wrapper {
+        height: 75vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-card {
+        width: 380px;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        background: #fff;
+    }
+
+    .login-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .login-footer {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 10px;
+        text-align: center;
+    }
+</style>
+
+@code {
+    private LoginModel model = new();
+
+    // private async void HandleSubmit()
+    // {
+    //     // store fake session
+    //     await JS.InvokeVoidAsync("localStorage.setItem", "isLoggedIn", "true");
+    //     Nav.NavigateTo("/");
+    // }
+
+    private async Task HandleSubmit()
+    {
+        var response = await Http.PostAsJsonAsync("api/auth/login", model);
+        var result = await response.Content.ReadFromJsonAsync<LoginResult>();
+
+        if (result is null || !result.Success)
+        {
+            await JS.InvokeVoidAsync("alert", result?.Message ?? "Login failed");
+            return;
+        }
+
+        // Save login state
+        await JS.InvokeVoidAsync("localStorage.setItem", "isLoggedIn", "true");
+        await JS.InvokeVoidAsync("localStorage.setItem", "userId", result.UserId ?? "");
+        await JS.InvokeVoidAsync("localStorage.setItem", "role", result.Role ?? "");
+
+        Nav.NavigateTo("/");
+    }
+
+    public class LoginResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = "";
+        public string? UserId { get; set; }
+        public string? Role { get; set; }
+    }
+
+
+    private class LoginModel
+    {
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+}

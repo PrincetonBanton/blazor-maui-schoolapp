@@ -7,10 +7,8 @@
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-<PageHeader 
-    Title="@( $"Student Scores - {SelectedGradeLevel?.LevelName} {SelectedSchoolSection?.SectionName}" )" 
-/>
-
+<AuthGuard>
+<PageHeader Title="@( $"Student Scores - {SelectedGradeLevel?.LevelName} {SelectedSchoolSection?.SectionName}" )" />
 
 @if (SubGradingItem == null)
 {
@@ -115,11 +113,11 @@ else
     </tbody>
 </table>
 
-
-    <div class="mt-3">
-        <button class="btn btn-success" @onclick="ConfirmSaveAll">Save All Scores</button>
-    </div>
+<div class="mt-3">
+    <button class="btn btn-success" @onclick="ConfirmSaveAll">Save All Scores</button>
+</div>
 }
+</AuthGuard>
 
 @code {
     [Parameter] public Guid SubGradingItemId { get; set; }

@@ -4,7 +4,6 @@
     font-size: 14px !important;
 }
 html, body {
-    /*font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;*/
     font-family: 'Roboto', sans-serif !important;
     font-size: 14px !important;
 }
@@ -67,3 +66,40 @@ a, .btn-link {
     .blazor-error-boundary::after {
         content: "An error has occurred."
     }
+
+.loading-overlay {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    background-color: #f8f9fa;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loader {
+    display: inline-block;
+    width: 5rem;
+    height: 5rem;
+    vertical-align: text-bottom;
+    border: .50em solid #e5e7eb;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin .75s linear infinite;
+}
+
+.loading-text {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #3b82f6;
+    font-family: 'Roboto', sans-serif;
+}
+
+
+

@@ -5,26 +5,21 @@
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-@* <PageHeader Title="Students List" />
- *@<PageHeader Title="Students List" OnSearch="HandleSearch" />
+<AuthGuard>
+ <PageHeader Title="Students List" OnSearch="HandleSearch" />
+ <SchoolContextSelector />
 
-<SchoolContextSelector />
-
-@if (!SchoolContext.SelectedSchoolYearId.HasValue ||
-     !SchoolContext.SelectedGradeLevelId.HasValue ||
-     !SchoolContext.SelectedSchoolSectionId.HasValue)
-{
-    <NoDataLogo />
-
-}
-else if (students == null)
-{
-    <LoadingSpinner />
-}
-else if (!students.Any())
-{
-    @if (SchoolContext.SelectedSchoolYearId != null &&
-         SchoolContext.SelectedGradeLevelId != null)
+    @if (!SchoolContext.SelectedSchoolYearId.HasValue ||
+        !SchoolContext.SelectedGradeLevelId.HasValue ||
+        !SchoolContext.SelectedSchoolSectionId.HasValue)
+    {
+        <NoDataLogo />
+    }
+    else if (students == null)
+    {
+        <LoadingSpinner />
+    }
+    else if (!students.Any())
     {
         @if (IsSearching)
         {
@@ -42,129 +37,129 @@ else if (!students.Any())
             </div>
         }
     }
-}
-else
-{
-    <div class="col-6 mb-3">
-        <button class="btn btn-primary rounded-circle" style="width: 50px; height: 50px; font-size: larger;"
-                @onclick="ShowStudentModal">
-            +
-        </button>
-    </div>
+    else
+    {
+        <div class="col-6 mb-3">
+            <button class="btn btn-primary rounded-circle" style="width: 50px; height: 50px; font-size: larger;"
+                    @onclick="ShowStudentModal">
+                +
+            </button>
+        </div>
 
-    <table class="table table-striped align-middle">
-        <tbody>
-            @if (students.Count == 0)
-            {
-                <tr>
-                    <td colspan="8" class="text-center text-muted">
-                        No student data to display yet.
-                    </td>
-                </tr>
-            }
-            else
-            {
-                var index = 1;
-                foreach (var student in students)
+        <table class="table table-striped align-middle">
+            <tbody>
+                @if (students.Count == 0)
                 {
                     <tr>
-                        <!-- Row number -->
-                        <td style="width: 5%; text-align:center;">@index</td>
-
-                        <!-- Student picture -->
-                        <td style="width: 10%; text-align:center;">
-                            <img src="id_pic.png" alt="Student Photo"
-                                 class="rounded border me-3"
-                                 style="width: 30px; height: 30px; object-fit: cover;" />
-                        </td>
-
-                        <!-- Student name -->
-                        <td style="width: 25%;">
-                            @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())
-                        </td>
-
-                        <td style="width: 10%;">@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
-                        <td style="width: 10%;">@student.Gender</td>
-                        <td style="width: 20%;">@student.Address</td>
-                        <td style="width: 10%;">@student.ContactNumber</td>
-
-                        <!-- Action buttons -->
-                        <td style="width: 20%;">
-                            <div class="d-flex gap-2 justify-content-center">
-                                <div style="display:flex; gap:10px; justify-content:center;">
-                                    <button title="Edit"
-                                            @onclick="() => EditStudent(student)"
-                                            style="background:none; border:none; color:#f4b400; font-size:1.3rem; cursor:pointer;">
-                                        ✏️
-                                    </button>
-
-                                    <button title="Delete"
-                                            disabled
-                                            style="background:none; border:none; color:#d93025; font-size:1.3rem; cursor:not-allowed; opacity:0.6;">
-                                        ❌
-                                    </button>
-                                </div>
-                                <a class="btn btn-sm btn-primary" style="width:120px;" href="@($"/students/card/{student.Id}")">View Card</a>
-                            </div>
+                        <td colspan="8" class="text-center text-muted">
+                            No student data to display yet.
                         </td>
                     </tr>
-                    index++;
                 }
-            }
-        </tbody>
-    </table>
+                else
+                {
+                    var index = 1;
+                    foreach (var student in students)
+                    {
+                        <tr>
+                            <!-- Row number -->
+                            <td style="width: 5%; text-align:center;">@index</td>
 
-}
+                            <!-- Student picture -->
+                            <td style="width: 10%; text-align:center;">
+                                <img src="id_pic.png" alt="Student Photo"
+                                     class="rounded border me-3"
+                                     style="width: 30px; height: 30px; object-fit: cover;" />
+                            </td>
+
+                            <!-- Student name -->
+                            <td style="width: 25%;">
+                                @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())
+                            </td>
+
+                            <td style="width: 10%;">@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                            <td style="width: 10%;">@student.Gender</td>
+                            <td style="width: 20%;">@student.Address</td>
+                            <td style="width: 10%;">@student.ContactNumber</td>
+
+                            <!-- Action buttons -->
+                            <td style="width: 20%;">
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <div style="display:flex; gap:10px; justify-content:center;">
+                                        <button title="Edit"
+                                                @onclick="() => EditStudent(student)"
+                                                style="background:none; border:none; color:#f4b400; font-size:1.3rem; cursor:pointer;">
+                                            ✏️
+                                        </button>
+
+                                        <button title="Delete"
+                                                disabled
+                                                style="background:none; border:none; color:#d93025; font-size:1.3rem; cursor:not-allowed; opacity:0.6;">
+                                            ❌
+                                        </button>
+                                    </div>
+                                    <a class="btn btn-sm btn-primary" style="width:120px;" href="@($"/students/card/{student.Id}")">View Card</a>
+                                </div>
+                            </td>
+                        </tr>
+                        index++;
+                    }
+                }
+            </tbody>
+        </table>
+
+    }
 
 
-@if (ShowModal)
-{
-    <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">@((IsEditMode ? "Edit Student" : "Add Student"))</h5>
-                    <button type="button" class="btn-close" @onclick="HideStudentModal"></button>
-                </div>
-                <div class="modal-body">
-                    <button class="btn btn-outline-primary mb-3" @onclick="AutoFillStudent">
-                        Auto-Fill Student Info
-                    </button>
-                    <div class="mb-3">
-                        <div class="alert alert-info d-flex justify-content-between align-items-center p-3 mb-3 border" style="min-height: 60px;">
-                            <div>
-                                <strong>@SchoolContext.GetSelectedGradeLevelName()</strong><br />
-                                <strong>@SchoolContext.GetSelectedSchoolSectionName()</strong>
+    @if (ShowModal)
+    {
+        <div class="modal d-block" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">@((IsEditMode ? "Edit Student" : "Add Student"))</h5>
+                        <button type="button" class="btn-close" @onclick="HideStudentModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <button class="btn btn-outline-primary mb-3" @onclick="AutoFillStudent">
+                            Auto-Fill Student Info
+                        </button>
+                        <div class="mb-3">
+                            <div class="alert alert-info d-flex justify-content-between align-items-center p-3 mb-3 border" style="min-height: 60px;">
+                                <div>
+                                    <strong>@SchoolContext.GetSelectedGradeLevelName()</strong><br />
+                                    <strong>@SchoolContext.GetSelectedSchoolSectionName()</strong>
+                                </div>
+                                <div class="text-end">
+                                    <small class="text-muted">@(SchoolContext.SelectedGradeLevelId?.ToString() ?? "N/A")</small><br />
+                                    <small class="text-muted">@(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
+                                </div>
                             </div>
-                            <div class="text-end">
-                                <small class="text-muted">@(SchoolContext.SelectedGradeLevelId?.ToString() ?? "N/A")</small><br />
-                                <small class="text-muted">@(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
-                            </div>
+
                         </div>
 
+                        <input class="form-control" placeholder="First Name" style="margin-bottom: 1rem;" @bind="NewStudent.FirstName" />
+                        <input class="form-control" placeholder="Middle Name" style="margin-bottom: 1rem;" @bind="NewStudent.MiddleName" />
+                        <input class="form-control" placeholder="Last Name" style="margin-bottom: 1rem;" @bind="NewStudent.LastName" />
+                        <input type="date" class="form-control" style="margin-bottom: 1rem;" @bind="NewStudent.DateOfBirth" />
+                        <select class="form-control" style="margin-bottom: 1rem;" @bind="NewStudent.Gender">
+                            <option value="">Select Gender...</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                        <input class="form-control" placeholder="Address" style="margin-bottom: 1rem;" @bind="NewStudent.Address" />
+                        <input class="form-control" placeholder="Contact Number" style="margin-bottom: 1rem;" @bind="NewStudent.ContactNumber" />
                     </div>
 
-                    <input class="form-control" placeholder="First Name" style="margin-bottom: 1rem;" @bind="NewStudent.FirstName" />
-                    <input class="form-control" placeholder="Middle Name" style="margin-bottom: 1rem;" @bind="NewStudent.MiddleName" />
-                    <input class="form-control" placeholder="Last Name" style="margin-bottom: 1rem;" @bind="NewStudent.LastName" />
-                    <input type="date" class="form-control" style="margin-bottom: 1rem;" @bind="NewStudent.DateOfBirth" />
-                    <select class="form-control" style="margin-bottom: 1rem;" @bind="NewStudent.Gender">
-                        <option value="">Select Gender...</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                    </select>
-                    <input class="form-control" placeholder="Address" style="margin-bottom: 1rem;" @bind="NewStudent.Address" />
-                    <input class="form-control" placeholder="Contact Number" style="margin-bottom: 1rem;" @bind="NewStudent.ContactNumber" />
-                </div>
-
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" style="width:150px;" @onclick="HideStudentModal">Cancel</button>
-                    <button class="btn btn-primary" style="width:150px;" @onclick="SaveStudentAsync">@(IsEditMode ? "Update" : "Save")</button>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" style="width:150px;" @onclick="HideStudentModal">Cancel</button>
+                        <button class="btn btn-primary" style="width:150px;" @onclick="SaveStudentAsync">@(IsEditMode ? "Update" : "Save")</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-}
+    }
+</AuthGuard>
 
 @code {
     private List<Student> students = new();
@@ -192,6 +187,11 @@ else
 
     private async Task LoadStudents()
     {
+        if (!SchoolContext.SelectedSchoolSectionId.HasValue)
+        {
+            students = new();
+            return;
+        }
         try
         {
             var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
@@ -207,9 +207,9 @@ else
                 students = new();
             }
         }
-        catch
+        catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", "Failed to load students.");
+            await JS.InvokeVoidAsync("alert", $"Error loading students: {ex.Message}");
         }
     }
 

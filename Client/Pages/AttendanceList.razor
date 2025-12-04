@@ -1,127 +1,120 @@
 ﻿@page "/attendance/list/{dateString}"
+@using SchoolApp.Shared.Models
+@using SchoolApp.Client.Shared.Calendars
+@using SchoolApp.Client.Shared.Modals
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
-@using SchoolApp.Shared.Models
 
-@* <PageHeader Title="Attendance" />
- *@<PageHeader Title="Attendance" OnSearch="HandleSearch" />
-<SchoolContextSelector />
+<AuthGuard>
 
-@if (!SchoolContext.SelectedSchoolSectionId.HasValue)
-{
-    <div class="alert alert-warning mt-3">
-        Please select a School Section to record attendance.
-    </div>
-}
-else if (Students == null)
-{
-    <LoadingSpinner />
-}
-else if (Students.Count == 0)
-{
-    <div class="alert alert-warning mt-3">
-        No students found for this section.
-    </div>
-}
-else
-{
-    <div class="card m-0" style="width:200px;">
-        <div class="card-body text-center p-0">
-            <h5 class="card-subtitle text-white border-bottom m-0 py-2" style="background-color:royalblue">
-                @SelectedDate.ToString("MMMM yyyy")
-            </h5>
-            <h1 class="display-4 m-0"
-                style="font-size:3rem; font-weight:bold; color:@(SelectedDate.DayOfWeek == DayOfWeek.Sunday ? "red" : "royalblue");">
-                @SelectedDate.Day
-            </h1>
-            <h4 class="card-title py-2 m-0"
-                style="color:@(SelectedDate.DayOfWeek == DayOfWeek.Sunday ? "red" : "black")">
-                @SelectedDate.ToString("dddd")
-            </h4>
-        </div>
-    </div>
+    <PageHeader Title="Attendance" OnSearch="HandleSearch" />
+    <SchoolContextSelector />
 
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th style="width:30%;">Name</th>
-                <th class="text-center" style="width:10%;">Present</th>
-                <th class="text-center" style="width:10%;">Absent</th>
-                <th style="width:50%;">Remarks</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var student in Students)
-            {
-                var isPresent = AttendanceMap.TryGetValue(student.Id, out var p) ? p : true;
-                var remark = RemarksMap.TryGetValue(student.Id, out var r) ? r : "Absent";
-
-                <tr>
-                    <td>
-                        @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())
-                    </td>
-                    <td class="text-center">
-                        <input type="radio" name="att-@student.Id" checked="@isPresent"
-                               @onchange="@(() => SetAttendance(student.Id, true))" />
-                    </td>
-                    <td class="text-center">
-                        <input type="radio" name="att-@student.Id" checked="@(!isPresent)"
-                               @onchange="@(() => { SetAttendance(student.Id, false); OpenRemarkModal(student); })" />
-                    </td>
-
-                    <td>
-                        @if (!isPresent)
-                        {
-                            @remark
-                        }
-                        else
-                        {
-                            <span class="text-success fw-semibold">OK</span>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-
-    </table>
-
-    <button class="btn btn-primary" @onclick="SaveAttendanceAsync">Save Attendance</button>
-
-    @if (ShowRemarkModal)
+    @if (!SchoolContext.SelectedSchoolSectionId.HasValue)
     {
-        <div class="modal fade show d-block" tabindex="-1" style="background-color:rgba(0,0,0,0.5);">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Absent Remark</h5>
-                        <button type="button" class="btn-close" @onclick="() => ShowRemarkModal = false"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p><strong>@ModalStudentName</strong></p>
-                        <textarea class="form-control" @bind="ModalRemark" rows="3"></textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" @onclick="() => ShowRemarkModal = false">Cancel</button>
-                        <button class="btn btn-primary" @onclick="SaveRemark">Save</button>
-                    </div>
-                </div>
-            </div>
+        <div class="alert alert-warning mt-3">
+            Please select a School Section to record attendance.
         </div>
     }
+    else if (Students == null)
+    {
+        <LoadingSpinner />
+    }
+    else if (Students.Count == 0)
+    {
+        <div class="alert alert-warning mt-3">
+            No students found for this section.
+        </div>
+    }
+    else
+    {
+        <!-- Selected Date Card -->
+        <div class="card m-0" style="width:200px;">
+            <div class="card-body text-center p-0">
+                <h5 class="card-subtitle text-white border-bottom m-0 py-2" style="background-color:royalblue">
+                    @SelectedDate.ToString("MMMM yyyy")
+                </h5>
 
-}
+                <h1 class="display-4 m-0"
+                    style="font-size:3rem; font-weight:bold; color:@(SelectedDate.DayOfWeek == DayOfWeek.Sunday ? "red" : "royalblue");">
+                    @SelectedDate.Day
+                </h1>
+
+                <h4 class="card-title py-2 m-0"
+                    style="color:@(SelectedDate.DayOfWeek == DayOfWeek.Sunday ? "red" : "black")">
+                    @SelectedDate.ToString("dddd")
+                </h4>
+            </div>
+        </div>
+
+        <!-- Attendance Table -->
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th style="width:30%;">Name</th>
+                    <th class="text-center" style="width:10%;">Present</th>
+                    <th class="text-center" style="width:10%;">Absent</th>
+                    <th style="width:50%;">Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var student in Students)
+                {
+                    var isPresent = AttendanceMap.TryGetValue(student.Id, out var p) ? p : true;
+                    var remark = RemarksMap.TryGetValue(student.Id, out var r) ? r : "Absent";
+
+                    <tr>
+                        <td>@($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())</td>
+
+                        <!-- Present -->
+                        <td class="text-center">
+                            <input type="radio" name="att-@student.Id" checked="@isPresent"
+                                   @onchange="@(() => SetAttendance(student.Id, true))" />
+                        </td>
+
+                        <!-- Absent -->
+                        <td class="text-center">
+                            <input type="radio" name="att-@student.Id" checked="@(!isPresent)"
+                                   @onchange="@(() => { SetAttendance(student.Id, false); OpenRemarkModal(student); })" />
+                        </td>
+
+                        <td>
+                            @if (!isPresent)
+                            {
+                                @remark
+                            }
+                            else
+                            {
+                                <span class="text-success fw-semibold">OK</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <button class="btn btn-primary mt-3" @onclick="SaveAttendanceAsync">Save Attendance</button>
+    }
+
+    <!-- Modal Component -->
+    <AbsentRemarkModal Show="ShowRemarkModal"
+                       StudentName="@ModalStudentName"
+                       Remark="@ModalRemark"
+                       OnSave="HandleRemarkSave"
+                       OnCancel="HandleRemarkCancel" />
+
+</AuthGuard>
 
 @code {
     [Parameter] public string dateString { get; set; } = string.Empty;
 
     private DateTime SelectedDate { get; set; }
-    private List<Student>? Students { get; set; }  // nullable to distinguish "loading"
+    private List<Student>? Students { get; set; }
     private readonly Dictionary<Guid, bool> AttendanceMap = new();
     private readonly Dictionary<Guid, string> RemarksMap = new();
 
-    // Modal State
     private bool ShowRemarkModal { get; set; } = false;
     private Guid ModalStudentId { get; set; }
     private string ModalStudentName { get; set; } = string.Empty;
@@ -147,58 +140,48 @@ else
         await LoadStudentsAndAttendanceAsync();
     }
 
-
     private async Task LoadStudentsAndAttendanceAsync()
     {
-        try
+        if (!SchoolContext.SelectedSchoolSectionId.HasValue)
         {
-            if (!SchoolContext.SelectedSchoolSectionId.HasValue)
-            {
-                Students = new();
-                return;
-            }
-
-            var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
-            Students = allStudents
-                .Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
-                .ToList();
-
-            // Load saved attendance for this section + date
-            var attendanceRecords = await Http.GetFromJsonAsync<List<Attendance>>(
-                $"api/attendance/{SchoolContext.SelectedSchoolSectionId}/{SelectedDate:yyyy-MM-dd}"
-            ) ?? new();
-
-            AttendanceMap.Clear();
-            RemarksMap.Clear();
-
-            foreach (var student in Students)
-            {
-                var record = attendanceRecords.FirstOrDefault(r => r.StudentId == student.Id);
-                AttendanceMap[student.Id] = record?.IsPresent ?? true;
-                if (record != null && !record.IsPresent)
-                {
-                    RemarksMap[student.Id] = record.Remarks ?? "Absent";
-                }
-            }
-
+            Students = new();
+            return;
         }
-        catch (Exception ex)
+
+        var allStudents = await Http.GetFromJsonAsync<List<Student>>("api/student") ?? new();
+
+        Students = allStudents
+            .Where(s => s.SchoolSectionId == SchoolContext.SelectedSchoolSectionId.Value)
+            .ToList();
+
+        var attendanceRecords = await Http.GetFromJsonAsync<List<Attendance>>(
+            $"api/attendance/{SchoolContext.SelectedSchoolSectionId}/{SelectedDate:yyyy-MM-dd}"
+        ) ?? new();
+
+        AttendanceMap.Clear();
+        RemarksMap.Clear();
+
+        foreach (var student in Students)
         {
-            Console.WriteLine($"Error loading students/attendance: {ex.Message}");
-            await JS.InvokeVoidAsync("alert", "Failed to load attendance.");
+            var record = attendanceRecords.FirstOrDefault(r => r.StudentId == student.Id);
+            AttendanceMap[student.Id] = record?.IsPresent ?? true;
+
+            if (record != null && !record.IsPresent)
+            {
+                RemarksMap[student.Id] = record.Remarks ?? "Absent";
+            }
         }
     }
 
     private async void OnContextChanged()
     {
-        AttendanceMap.Clear(); 
-        Students = null;       
-        StateHasChanged();     
+        AttendanceMap.Clear();
+        Students = null;
 
+        StateHasChanged();
         await LoadStudentsAndAttendanceAsync();
         StateHasChanged();
     }
-
 
     public void Dispose()
     {
@@ -208,6 +191,25 @@ else
     private void SetAttendance(Guid studentId, bool isPresent)
     {
         AttendanceMap[studentId] = isPresent;
+    }
+
+    private void OpenRemarkModal(Student student)
+    {
+        ModalStudentId = student.Id;
+        ModalStudentName = $"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim();
+        ModalRemark = RemarksMap.TryGetValue(student.Id, out var r) ? r : "Absent";
+        ShowRemarkModal = true;
+    }
+
+    private void HandleRemarkCancel()
+    {
+        ShowRemarkModal = false;
+    }
+
+    private void HandleRemarkSave(string remark)
+    {
+        RemarksMap[ModalStudentId] = remark;
+        ShowRemarkModal = false;
     }
 
     private async Task SaveAttendanceAsync()
@@ -220,18 +222,10 @@ else
 
         try
         {
-            // Delete existing attendance for this section and date
-            var deleteUrl = $"api/attendance/{SchoolContext.SelectedSchoolSectionId}/{SelectedDate:yyyy-MM-dd}";
-            var deleteResponse = await Http.DeleteAsync(deleteUrl);
+            await Http.DeleteAsync(
+                $"api/attendance/{SchoolContext.SelectedSchoolSectionId}/{SelectedDate:yyyy-MM-dd}"
+            );
 
-            if (!deleteResponse.IsSuccessStatusCode)
-            {
-                var err = await deleteResponse.Content.ReadAsStringAsync();
-                await JS.InvokeVoidAsync("alert", $"Failed to clear existing attendance: {err}");
-                return;
-            }
-
-            // Build list of absences only (default = present)
             var absences = Students
                 .Where(s => AttendanceMap.TryGetValue(s.Id, out var present) ? !present : false)
                 .Select(s => new Attendance
@@ -248,49 +242,23 @@ else
                 })
                 .ToList();
 
-            // Insert absences only if there are any
             if (absences.Any())
-            {
-                var postResponse = await Http.PostAsJsonAsync("api/attendance", absences);
+                await Http.PostAsJsonAsync("api/attendance", absences);
 
-                if (!postResponse.IsSuccessStatusCode)
-                {
-                    var err = await postResponse.Content.ReadAsStringAsync();
-                    await JS.InvokeVoidAsync("alert", $"Failed to save absences: {err}");
-                    return;
-                }
-            }
-
-            var message = absences.Any()
-                ? $"Saved {absences.Count} absence(s) for {SelectedDate:MMMM dd, yyyy}."
-                : $"All students marked present for {SelectedDate:MMMM dd, yyyy}.";
-            await JS.InvokeVoidAsync("alert", message);
+            await JS.InvokeVoidAsync("alert", "Attendance saved.");
             await LoadStudentsAndAttendanceAsync();
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error saving attendance: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", $"Error: {ex.Message}");
         }
     }
 
-    private void OpenRemarkModal(Student student)
-    {
-        ModalStudentId = student.Id;
-        ModalStudentName = $"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim();
-        ModalRemark = RemarksMap.TryGetValue(student.Id, out var r) ? r : "Absent";
-        ShowRemarkModal = true;
-    }
-    private void SaveRemark()
-    {
-        RemarksMap[ModalStudentId] = ModalRemark;
-        ShowRemarkModal = false;
-    }
     private string SearchKeyword = "";
     private async Task HandleSearch(string keyword)
     {
         SearchKeyword = keyword.Trim().ToLower();
 
-        // If empty → restore full list
         if (string.IsNullOrWhiteSpace(SearchKeyword))
         {
             await LoadStudentsAndAttendanceAsync();
@@ -298,14 +266,10 @@ else
             return;
         }
 
-        Students = Students
-            .Where(s =>
-            (
-                $"{s.LastName} {s.FirstName} {s.MiddleName}".ToLower().Contains(SearchKeyword)
-            ))
+        Students = Students!
+            .Where(s => $"{s.LastName} {s.FirstName} {s.MiddleName}".ToLower().Contains(SearchKeyword))
             .ToList();
 
         StateHasChanged();
     }
-
 }

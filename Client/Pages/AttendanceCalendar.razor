@@ -1,37 +1,40 @@
 ﻿@page "/attendance/calendar"
 @using SchoolApp.Client.Shared
+@using SchoolApp.Client.Shared.Calendars
 @inject HttpClient Http
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-<PageHeader Title="School Year" />
+<AuthGuard>
+    <PageHeader Title="School Year" />
 
-<div style="display: flex; gap: 0rem; margin-bottom: 10px">
-    <button title="Toggle Calendar" @onclick="ToggleMonthCalendar">
-        @(ShowMonthCalendar ? "📅" : "🗓️")
-    </button>
-    <button title="Toggle Now" @onclick="ResetToToday">
-        🕒
-    </button>
-</div>
+    <div style="display: flex; gap: 0rem; margin-bottom: 10px">
+        <button title="Toggle Calendar" @onclick="ToggleMonthCalendar">
+            @(ShowMonthCalendar ? "📅" : "🗓️")
+        </button>
+        <button title="Toggle Now" @onclick="ResetToToday">
+            🕒
+        </button>
+    </div>
 
-<div class="year-view @(ShowMonthCalendar ? "hide" : "show")">
-    <CalendarYear SelectedMonth="@SelectedMonth"
-                  SelectedYear="@SelectedYear"
-                  SelectedDay="@SelectedDay"
-                  OnDayClicked="OnDayClicked"
-                  OnMonthSelected="HandleMonthSelected"
-                  SchoolYearStart="@SchoolContext.GetSelectedSchoolYearStart()"
-                  SchoolYearEnd="@SchoolContext.GetSelectedSchoolYearEnd()" />
-</div>
+    <div class="year-view @(ShowMonthCalendar ? "hide" : "show")">
+        <CalendarYear SelectedMonth="@SelectedMonth"
+                      SelectedYear="@SelectedYear"
+                      SelectedDay="@SelectedDay"
+                      OnDayClicked="OnDayClicked"
+                      OnMonthSelected="HandleMonthSelected"
+                      SchoolYearStart="@SchoolContext.GetSelectedSchoolYearStart()"
+                      SchoolYearEnd="@SchoolContext.GetSelectedSchoolYearEnd()" />
+    </div>
 
-<div class="month-view @(ShowMonthCalendar ? "show" : "hide")">
-    <CalendarMonth DaysInMonth="DaysInMonth"
-                   StartOffset="StartOffset"
-                   EndOffset="EndOffset"
-                   OnDayClicked="OnDayClicked" />
-</div>
+    <div class="month-view @(ShowMonthCalendar ? "show" : "hide")">
+        <CalendarMonth DaysInMonth="DaysInMonth"
+                       StartOffset="StartOffset"
+                       EndOffset="EndOffset"
+                       OnDayClicked="OnDayClicked" />
+    </div>
+</AuthGuard>
 
 <style>
     button {

@@ -1,5 +1,7 @@
 ﻿@using SchoolApp.Client.Shared
+@using SchoolApp.Client.Shared.Modals
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <div class="d-flex justify-content-between align-items-center mb-3 w-100"
      style="padding-bottom: 10px; border-bottom: 1px solid #e0e0e0;">
@@ -31,11 +33,16 @@
                  style="width: 35px; height: 35px; color: white; font-size: 1.1rem;">
                 👤
             </div>
-
-            <div style="font-weight: 500; font-size: 0.8rem; color: darkblue;">
+@*             <div style="font-weight: 500; font-size: 0.8rem; color: darkblue;">
                 John Doe
-            </div>
+            </div> *@
         </div>
+        <button title="Logout"
+            @onclick="Logout"
+            class="d-flex bg-primary text-white rounded-circle shadow align-items-center justify-content-center"
+            style="width: 35px; height: 35px; font-size: 1rem; border: none;">
+            ❌
+        </button>
     </div>
 </div>
 
@@ -66,8 +73,6 @@
 
     private async Task TriggerUniversalSearch()
     {
-        string url = await JS.InvokeAsync<string>("eval", "window.location.href");
-
         await OnSearch.InvokeAsync(SearchText);
     }
 
@@ -75,7 +80,6 @@
     {
         SearchText = e.Value?.ToString() ?? "";
 
-        // debounce for 300ms (so it doesn't trigger per keystroke)
         debounceTimer?.Stop();
         debounceTimer = new System.Timers.Timer(300);
         debounceTimer.Elapsed += async (_, __) =>
@@ -86,4 +90,9 @@
         debounceTimer.Start();
     }
 
+    private async Task Logout()
+    {
+        await JS.InvokeVoidAsync("localStorage.removeItem", "isLoggedIn");
+        Nav.NavigateTo("/login", true);
+    }
 }

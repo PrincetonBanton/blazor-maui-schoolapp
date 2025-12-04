@@ -1,6 +1,7 @@
 ﻿// File: SchoolApp.Server/Data/ApplicationDbContext.cs
 
 using Microsoft.EntityFrameworkCore;
+using SchoolApp.Server.Models;
 using SchoolApp.Shared.Models;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,5 +25,7 @@ namespace SchoolApp.Server.Data
         public DbSet<GradeLevel> GradeLevels { get; set; }
         public DbSet<SchoolSection> SchoolSections { get; set; }
         public DbSet<Attendance> Attendances { get; set; }
+        public DbSet<User> Users { get; set; }
+
     }
 }

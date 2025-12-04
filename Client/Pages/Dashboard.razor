@@ -6,82 +6,84 @@
 @inject NavigationManager NavigationManager
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-<PageHeader Title="Dashboard" />
-<SchoolContextSelector />
+<AuthGuard>
+    <PageHeader Title="Dashboard" />
+    <SchoolContextSelector />
 
-@if (Subjects == null)
-{
-    <div class="mt-3">Loading subjects...</div>
-}
-else if (!Subjects.Any())
-{
-    <NoDataLogo />
+    @if (Subjects == null)
+    {
+        <div class="mt-3">Loading subjects...</div>
+    }
+    else if (!Subjects.Any())
+    {
+        <NoDataLogo />
 
-}
-else
-{
-    <!-- TOP ATTENDANCE LIST -->
-    <div class="mt-5">
-        <div class="card shadow-sm">
-            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <strong>Top Attendance</strong>
-                <span class="text-light">
-                    School Days: <strong>@TotalSchoolDays</strong>
-                </span>
-            </div>
-            <div class="card-body">
-                @if (Students == null || !Students.Any())
-                {
-                    <div class="text-muted">No students found for the selected School Section.</div>
-                }
-                else
-                {
-                    <div style="max-height: 300px; overflow-y: auto;">
-                        <ul class="list-group list-group-flush my-0">
-                            @foreach (var student in Students)
-                            {
-                                <li class="list-group-item border-0 d-flex justify-content-between align-items-center py-1">
-                                    <span>
-                                        <i class="bi bi-person-fill me-2"></i>@student.FirstName @student.LastName
-                                    </span>
-                                    <span class="badge @(GetAbsences(student.Id) == 0 ? "bg-success" :
-                                            GetAbsences(student.Id) <= 2 ? "bg-warning text-dark" : "bg-danger") rounded-pill shadow-sm"
-                                            style="font-size: 1rem; font-weight: 400; padding: 0.4rem 0.9rem; min-width: 45px; text-align: center;">
-                                            @GetAbsences(student.Id)
-                                    </span>
-                                </li>
-                            }
-                        </ul>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
-    <!-- SUBJECTS WITH TOP 5 STUDENTS -->
-    <div class="row mt-3">
-        @foreach (var s in Subjects)
-        {
-            <div class="col-md-4 mb-3">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <strong>@s.Name</strong>
-                        <span class="badge bg-light text-dark">Top 5</span>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled mb-0">
-                            @foreach (var student in GetTop5Students())
-                            {
-                                <li>
-                                    <i class="bi bi-person-fill me-2"></i>@student
-                                </li>
-                            }
-                        </ul>
-                    </div>
+    }
+    else
+    {
+        <!-- TOP ATTENDANCE LIST -->
+        <div class="mt-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <strong>Top Attendance</strong>
+                    <span class="text-light">
+                        School Days: <strong>@TotalSchoolDays</strong>
+                    </span>
+                </div>
+                <div class="card-body">
+                    @if (Students == null || !Students.Any())
+                    {
+                        <div class="text-muted">No students found for the selected School Section.</div>
+                    }
+                    else
+                    {
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            <ul class="list-group list-group-flush my-0">
+                                @foreach (var student in Students)
+                                {
+                                    <li class="list-group-item border-0 d-flex justify-content-between align-items-center py-1">
+                                        <span>
+                                            <i class="bi bi-person-fill me-2"></i>@student.FirstName @student.LastName
+                                        </span>
+                                        <span class="badge @(GetAbsences(student.Id) == 0 ? "bg-success" :
+                                                                                          GetAbsences(student.Id) <= 2 ? "bg-warning text-dark" : "bg-danger") rounded-pill shadow-sm"
+                                  style="font-size: 1rem; font-weight: 400; padding: 0.4rem 0.9rem; min-width: 45px; text-align: center;">
+                                @GetAbsences(student.Id)
+                            </span>
+                        </li>
+                                                }
+                            </ul>
+                        </div>
+                    }
                 </div>
             </div>
-        }
-    </div>
-}
+        </div>
+        <!-- SUBJECTS WITH TOP 5 STUDENTS -->
+        <div class="row mt-3">
+            @foreach (var s in Subjects)
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <strong>@s.Name</strong>
+                            <span class="badge bg-light text-dark">Top 5</span>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled mb-0">
+                                @foreach (var student in GetTop5Students())
+                                {
+                                    <li>
+                                        <i class="bi bi-person-fill me-2"></i>@student
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</AuthGuard>
 
 @code {
     private List<Subject>? Subjects;
@@ -92,6 +94,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        // Check fake session (localStorage)
+        var isLoggedIn = await JS.InvokeAsync<string>("localStorage.getItem", "isLoggedIn");
+        if (string.IsNullOrEmpty(isLoggedIn))
+        {
+            NavigationManager.NavigateTo("/login", true);
+            return; 
+        }
+
         SchoolContext.OnContextChanged += HandleContextChanged;
         await LoadSubjects();
         await LoadStudents();

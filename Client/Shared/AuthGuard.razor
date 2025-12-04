@@ -1,0 +1,30 @@
+﻿@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+@if (!IsAuthorized)
+{
+    <div>Checking login...</div>
+}
+else
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool IsAuthorized = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var logged = await JS.InvokeAsync<string>("localStorage.getItem", "isLoggedIn");
+
+        if (string.IsNullOrEmpty(logged))
+        {
+            Nav.NavigateTo("/login", true);
+            return;
+        }
+
+        IsAuthorized = true;
+    }
+}

@@ -5,123 +5,122 @@
 @inject IJSRuntime JS
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
-@* <PageHeader Title="Subject List" />
- *@<PageHeader Title="Subject List" OnSearch="HandleSearch" />
+<AuthGuard>
+ <PageHeader Title="Subject List" OnSearch="HandleSearch" />
+ <SchoolContextSelector />
 
-<SchoolContextSelector />
-
-@if (!SchoolContext.SelectedSchoolYearId.HasValue ||
-     !SchoolContext.SelectedGradeLevelId.HasValue ||
-     !SchoolContext.SelectedSchoolSectionId.HasValue)
-{
-    <NoDataLogo />
-}
-else if (subjects == null)
-{
-    <LoadingSpinner />
-}
-else if (!subjects.Any())
-{
-    @if (IsSearching)
+    @if (!SchoolContext.SelectedSchoolYearId.HasValue ||
+        !SchoolContext.SelectedGradeLevelId.HasValue ||
+        !SchoolContext.SelectedSchoolSectionId.HasValue)
     {
-        <div class="alert alert-info mt-3 text-center">
-            No matching subject found.
-        </div>
+        <NoDataLogo />
+    }
+    else if (subjects == null)
+    {
+        <LoadingSpinner />
+    }
+    else if (!subjects.Any())
+    {
+        @if (IsSearching)
+        {
+            <div class="alert alert-info mt-3 text-center">
+                No matching subject found.
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning mt-3 d-flex justify-content-between align-items-center">
+                <div>
+                    Do you want to add a subject for <strong>@SchoolContext.GetSelectedGradeLevelName()</strong>?
+                </div>
+                <button class="btn btn-primary btn-sm" @onclick="ShowAddSubjectModal">Yes</button>
+            </div>
+        }
     }
     else
     {
-        <div class="alert alert-warning mt-3 d-flex justify-content-between align-items-center">
-            <div>
-                Do you want to add a subject for <strong>@SchoolContext.GetSelectedGradeLevelName()</strong>?
-            </div>
-            <button class="btn btn-primary btn-sm" @onclick="ShowAddSubjectModal">Yes</button>
+        <div class="col-6 mb-3">
+            <button class="btn btn-primary rounded-circle" style="width: 50px; height: 50px; font-size: larger;"
+                    @onclick="ShowAddSubjectModal">
+                +
+            </button>
         </div>
-    }
-}
 
-else
-{
-    <div class="col-6 mb-3">
-        <button class="btn btn-primary rounded-circle" style="width: 50px; height: 50px; font-size: larger;"
-                @onclick="ShowAddSubjectModal">
-            +
-        </button>
-    </div>
-
-    <table class="table table-striped">
-        <tbody>
-            @{
-                var index = 1;
-            }
-            @foreach (var subject in subjects)
-            {
-                <tr>
-                    <td>@index</td>
-                    <td>@subject.Name</td>
-                    <td>
-                        @if (subject.IsValidated)
-                        {
-                            <span class="text-success">Validated</span>
-                        }
-                        else
-                        {
-                            <span class="text-danger">Not Validated</span>
-                        }
-                    </td>
-                    <td>
-                        <div class="d-flex gap-3">
+        <table class="table table-striped">
+            <tbody>
+                @{
+                    var index = 1;
+                }
+                @foreach (var subject in subjects)
+                {
+                    <tr>
+                        <td>@index</td>
+                        <td>@subject.Name</td>
+                        <td>
                             @if (subject.IsValidated)
                             {
-                                <NavLink class="btn btn-primary btn-sm me-1" style="width:140px; height:30px;" href="@($"/subject/template/{subject.Id}")">
-                                    Subject Template
-                                </NavLink>
+                                <span class="text-success">Validated</span>
                             }
                             else
                             {
-                                <NavLink class="btn btn-info btn-sm me-1" style="width:140px; height:30px;" href="@($"/subject/setup/{subject.Id}")">
-                                    Subject Setup
-                                </NavLink>
+                                <span class="text-danger">Not Validated</span>
                             }
-                            <button title="Edit"
-                                    @onclick="() => EditSubject(subject)"
-                                    style="background:none; border:none; color:#f4b400; font-size:1.3rem; cursor:pointer;">
-                                ✏️
-                            </button>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-3">
+                                @if (subject.IsValidated)
+                                {
+                                    <NavLink class="btn btn-primary btn-sm me-1" style="width:140px; height:30px;" href="@($"/subject/template/{subject.Id}")">
+                                        Subject Template
+                                    </NavLink>
+                                }
+                                else
+                                {
+                                    <NavLink class="btn btn-info btn-sm me-1" style="width:140px; height:30px;" href="@($"/subject/setup/{subject.Id}")">
+                                        Subject Setup
+                                    </NavLink>
+                                }
+                                <button title="Edit"
+                                        @onclick="() => EditSubject(subject)"
+                                        style="background:none; border:none; color:#f4b400; font-size:1.3rem; cursor:pointer;">
+                                    ✏️
+                                </button>
 
-                       </div>
-                    </td>
-                </tr>
-                index++;
-            }
-        </tbody>
-    </table>
-}
-@if (ShowModal)
-{
-    <div class="modal d-block" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">@((IsEditMode ? "Edit Subject" : "Add Subject"))</h5>
-                    <button type="button" class="btn-close" @onclick="HideSubjectModal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <div class="alert alert-info d-flex align-items-center justify-content-between p-3 mb-3 border" style="min-height: 50px;">
-                            <strong>@SchoolContext.GetSelectedGradeLevelName()</strong>
-                            <small>ID: @(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
-                        </div>
+                            </div>
+                        </td>
+                    </tr>
+                    index++;
+                }
+            </tbody>
+        </table>
+    }
+    @if (ShowModal)
+    {
+        <div class="modal d-block" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">@((IsEditMode ? "Edit Subject" : "Add Subject"))</h5>
+                        <button type="button" class="btn-close" @onclick="HideSubjectModal"></button>
                     </div>
-                    <input type="text" class="form-control mb-3" placeholder="Subject Name" @bind="NewSubjectName" />
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" style="width:150px" @onclick="HideSubjectModal">Cancel</button>
-                    <button class="btn btn-primary" style="width:150px" @onclick="SaveSubjectAsync">@(IsEditMode ? "Update" : "Save")</button>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <div class="alert alert-info d-flex align-items-center justify-content-between p-3 mb-3 border" style="min-height: 50px;">
+                                <strong>@SchoolContext.GetSelectedGradeLevelName()</strong>
+                                <small>ID: @(SchoolContext.SelectedSchoolSectionId?.ToString() ?? "N/A")</small>
+                            </div>
+                        </div>
+                        <input type="text" class="form-control mb-3" placeholder="Subject Name" @bind="NewSubjectName" />
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" style="width:150px" @onclick="HideSubjectModal">Cancel</button>
+                        <button class="btn btn-primary" style="width:150px" @onclick="SaveSubjectAsync">@(IsEditMode ? "Update" : "Save")</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-}
+    }
+</AuthGuard>
 
 @code {
     private List<Subject>? subjects;
