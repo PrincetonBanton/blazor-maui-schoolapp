@@ -77,22 +77,54 @@
 
     private async Task HandleSubmit()
     {
-        var response = await Http.PostAsJsonAsync("api/auth/login", model);
-        var result = await response.Content.ReadFromJsonAsync<LoginResult>();
-
-        if (result is null || !result.Success)
+        try
         {
-            await JS.InvokeVoidAsync("alert", result?.Message ?? "Login failed");
-            return;
+            var response = await Http.PostAsJsonAsync("api/auth/login", model);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorText = await response.Content.ReadAsStringAsync();
+                await JS.InvokeVoidAsync("alert", $"Login failed: {errorText}");
+                return;
+            }
+
+            LoginResult? result = null;
+
+            try
+            {
+                result = await response.Content.ReadFromJsonAsync<LoginResult>();
+            }
+            catch (Exception jsonEx)
+            {
+                await JS.InvokeVoidAsync("alert", $"Invalid server response: {jsonEx.Message}");
+                return;
+            }
+
+            if (result == null)
+            {
+                await JS.InvokeVoidAsync("alert", "Error: Empty response from server.");
+                return;
+            }
+
+            if (!result.Success)
+            {
+                await JS.InvokeVoidAsync("alert", result.Message ?? "Login failed");
+                return;
+            }
+
+            // Save login state
+            await JS.InvokeVoidAsync("localStorage.setItem", "isLoggedIn", "true");
+            await JS.InvokeVoidAsync("localStorage.setItem", "userId", result.UserId ?? "");
+            await JS.InvokeVoidAsync("localStorage.setItem", "role", result.Role ?? "");
+
+            Nav.NavigateTo("/");
         }
-
-        // Save login state
-        await JS.InvokeVoidAsync("localStorage.setItem", "isLoggedIn", "true");
-        await JS.InvokeVoidAsync("localStorage.setItem", "userId", result.UserId ?? "");
-        await JS.InvokeVoidAsync("localStorage.setItem", "role", result.Role ?? "");
-
-        Nav.NavigateTo("/");
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Unexpected error: {ex.Message}");
+        }
     }
+
 
     public class LoginResult
     {

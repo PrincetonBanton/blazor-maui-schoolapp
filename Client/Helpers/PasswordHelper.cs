@@ -1,6 +1,6 @@
 ﻿using System.Security.Cryptography;
 
-namespace SchoolApp.Server.Helpers
+namespace SchoolApp.Client.Helpers
 {
     public static class PasswordHelper
     {
