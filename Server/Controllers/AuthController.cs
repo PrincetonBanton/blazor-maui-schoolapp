@@ -11,31 +11,17 @@ namespace SchoolApp.Server.Controllers
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly ApplicationDbContext _db;
+        private readonly ApplicationDbContext _context;
 
-        public AuthController(ApplicationDbContext db)
+        public AuthController(ApplicationDbContext context)
         {
-            _db = db;
-        }
-
-        public class LoginRequest
-        {
-            public string Username { get; set; } = "";
-            public string Password { get; set; } = "";
-        }
-
-        public class LoginResponse
-        {
-            public bool Success { get; set; }
-            public string Message { get; set; } = "";
-            public string? UserId { get; set; }
-            public string? Role { get; set; }
+            _context = context;
         }
 
         [HttpPost("login")]
         public async Task<ActionResult<LoginResponse>> Login(LoginRequest request)
         {
-            var user = await _db.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
             if (user == null)
                 return new LoginResponse { Success = false, Message = "User not found." };
 
@@ -51,5 +37,52 @@ namespace SchoolApp.Server.Controllers
                 UserId = user.Id.ToString()
             };
         }
+
+        public class LoginRequest
+        {
+            public string Username { get; set; } = "";
+            public string Password { get; set; } = "";
+        }
+        public class LoginResponse
+        {
+            public bool Success { get; set; }
+            public string Message { get; set; } = "";
+            public string? UserId { get; set; }
+            public string? Role { get; set; }
+        }
+
+
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(LoginRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Username) ||
+                string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest("Missing username or password.");
+            }
+
+            // Check if username exists
+            if (await _context.Users.AnyAsync(x => x.Username == request.Username))
+            {
+                return BadRequest("Username already exists.");
+            }
+
+            // Generate hash + salt
+            var (hash, salt) = PasswordHelper.HashPassword(request.Password);
+
+            var user = new User
+            {
+                Username = request.Username,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                Role = "Admin"
+            };
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok("User registered successfully!");
+        }
+
     }
 }

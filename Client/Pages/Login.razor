@@ -24,9 +24,11 @@
                 <InputText class="form-control" type="password" @bind-Value="model.Password" placeholder="12345" />
             </div>
 
-            <div class="d-grid">
-                <button class="btn btn-primary" type="submit">Login</button>
+            <div class="d-flex mt-4" style="gap: 8px;">
+                <button class="btn btn-primary flex-fill" type="submit">Login</button>
+                <button class="btn btn-primary flex-fill" type="button" @onclick="GoToRegister">Register</button>
             </div>
+
         </EditForm>
 
         <div class="login-footer mt-3">
@@ -125,7 +127,6 @@
         }
     }
 
-
     public class LoginResult
     {
         public bool Success { get; set; }
@@ -134,10 +135,15 @@
         public string? Role { get; set; }
     }
 
-
     private class LoginModel
     {
         public string Username { get; set; } = "";
         public string Password { get; set; } = "";
     }
+
+    private void GoToRegister()
+    {
+        Nav.NavigateTo("/register");
+    }
+
 }

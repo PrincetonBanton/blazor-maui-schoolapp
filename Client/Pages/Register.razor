@@ -1,0 +1,86 @@
+﻿@page "/register"
+@using SchoolApp.Shared.Models
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <div class="login-logo">
+            <img src="sample_logo.png" alt="Logo" width="88" height="88" />
+        </div>
+
+        <h5 class="text-center mb-3">Create Admin Account</h5>
+
+        <EditForm Model="model" OnValidSubmit="HandleRegister">
+            <div class="mb-2">
+                <label class="form-label">Username</label>
+                <InputText class="form-control" @bind-Value="model.Username" placeholder="admin" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <InputText class="form-control" type="password" @bind-Value="model.Password" placeholder="12345" />
+            </div>
+
+            <div class="d-grid">
+                <button class="btn btn-success" type="submit">Register</button>
+            </div>
+        </EditForm>
+
+        <div class="login-footer mt-3 text-center">
+            Already have an account?
+            <a href="/login">Login here</a>.
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-wrapper {
+        height: 75vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .login-card {
+        width: 380px;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        background: #fff;
+    }
+
+    .login-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .login-footer {
+        font-size: 0.85rem;
+        color: #666;
+    }
+</style>
+
+@code {
+    private RegisterModel model = new();
+
+    private async Task HandleRegister()
+    {
+        var response = await Http.PostAsJsonAsync("api/auth/register", model);
+        var text = await response.Content.ReadAsStringAsync();
+
+        await JS.InvokeVoidAsync("alert", text);
+
+        if (response.IsSuccessStatusCode)
+            Nav.NavigateTo("/login");
+    }
+
+    public class RegisterModel
+    {
+        public string Username { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+}
