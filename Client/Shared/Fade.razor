@@ -1,0 +1,49 @@
+﻿@inject NavigationManager Nav
+
+<div class="@CssClass">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public object? Key { get; set; }  // triggers fade when data changes
+
+    private string CssClass = "fade-wrap";
+    private string? _lastUri;
+
+    protected override void OnInitialized()
+    {
+        _lastUri = Nav.Uri;
+        Nav.LocationChanged += HandleNav;
+    }
+
+    private void HandleNav(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        TriggerFade();
+    }
+
+    protected override void OnParametersSet()
+    {
+        // Check if Key (data) changed
+        if (Key != null)
+        {
+            TriggerFade();
+        }
+    }
+
+    private async void TriggerFade()
+    {
+        CssClass = "fade-wrap"; // reset opacity to 0
+        StateHasChanged();
+
+        await Task.Delay(10);   // small delay to restart animation
+
+        CssClass = "fade-wrap fade-active";
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Nav.LocationChanged -= HandleNav;
+    }
+}

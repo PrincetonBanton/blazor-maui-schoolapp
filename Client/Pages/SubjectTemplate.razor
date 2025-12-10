@@ -126,9 +126,10 @@
                                                         else
                                                         {
                                                             <!-- Show "Edit Scores" button if scores already exist -->
-                                                            <button title="Edit Scores"
-                                                                    @onclick="() => NavigateToItemResult(subGradingItemId)"
-                                                                    style="background:none; border:none; color:#f4b400; font-size:2rem; cursor:pointer; padding:0; margin:0; line-height:1;">
+                                                            <button class="btn btn-warning btn-sm rounded-circle"
+                                                                    style="width: 28px; height: 28px; padding: 0; margin-left: 5px"
+                                                                    title="Edit Scores"
+                                                                    @onclick="() => NavigateToItemResult(subGradingItemId)">
                                                                 ✏️
                                                             </button>
                                                         }

@@ -3,6 +3,7 @@
 @using SchoolApp.Shared.Models
 @inject HttpClient Http
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
 <AuthGuard>
@@ -13,7 +14,10 @@
         !SchoolContext.SelectedGradeLevelId.HasValue ||
         !SchoolContext.SelectedSchoolSectionId.HasValue)
     {
-        <NoDataLogo />
+        <div class="fade-in" @key="FadeKey">
+            <NoDataLogo />
+        </div>
+
     }
     else if (subjects == null)
     {
@@ -46,11 +50,14 @@
             </button>
         </div>
 
-        <table class="table table-striped">
+        //Load Table List
+        <div class="fade-in" @key="FadeKey">
+            <table class="table table-striped">
             <tbody>
                 @{
                     var index = 1;
                 }
+
                 @foreach (var subject in subjects)
                 {
                     <tr>
@@ -80,12 +87,12 @@
                                         Subject Setup
                                     </NavLink>
                                 }
-                                <button title="Edit"
-                                        @onclick="() => EditSubject(subject)"
-                                        style="background:none; border:none; color:#f4b400; font-size:1.3rem; cursor:pointer;">
+                                <button class="btn btn-warning btn-sm rounded-circle"
+                                        style="width: 28px; height: 28px; padding: 0;"
+                                        title="Edit Subject"
+                                        @onclick="() => EditSubject(subject)">
                                     ✏️
                                 </button>
-
                             </div>
                         </td>
                     </tr>
@@ -93,6 +100,7 @@
                 }
             </tbody>
         </table>
+        </div> 
     }
     @if (ShowModal)
     {
@@ -129,6 +137,10 @@
     private bool ShowModal = false;
     private bool IsEditMode = false;
     private bool IsSearching = false;
+    private string FadeKey => SchoolContext.SelectedGradeLevelId?.ToString() ?? "";
+    // private string FadeKey =>
+    // $"{SchoolContext.SelectedSchoolYearId}-{SchoolContext.SelectedGradeLevelId}-{SchoolContext.SelectedSchoolSectionId}";
+
 
     protected override async Task OnInitializedAsync()
     {

@@ -18,22 +18,25 @@
         </button>
     </div>
 
-    <div class="year-view @(ShowMonthCalendar ? "hide" : "show")">
-        <CalendarYear SelectedMonth="@SelectedMonth"
-                      SelectedYear="@SelectedYear"
-                      SelectedDay="@SelectedDay"
-                      OnDayClicked="OnDayClicked"
-                      OnMonthSelected="HandleMonthSelected"
-                      SchoolYearStart="@SchoolContext.GetSelectedSchoolYearStart()"
-                      SchoolYearEnd="@SchoolContext.GetSelectedSchoolYearEnd()" />
+    <div class="fade-in" @key="FadeKey">
+        <div class="year-view @(ShowMonthCalendar ? "hide" : "show")">
+            <CalendarYear SelectedMonth="@SelectedMonth"
+                          SelectedYear="@SelectedYear"
+                          SelectedDay="@SelectedDay"
+                          OnDayClicked="OnDayClicked"
+                          OnMonthSelected="HandleMonthSelected"
+                          SchoolYearStart="@SchoolContext.GetSelectedSchoolYearStart()"
+                          SchoolYearEnd="@SchoolContext.GetSelectedSchoolYearEnd()" />
+        </div>
+        <div class="month-view @(ShowMonthCalendar ? "show" : "hide")">
+            <CalendarMonth DaysInMonth="DaysInMonth"
+                           StartOffset="StartOffset"
+                           EndOffset="EndOffset"
+                           OnDayClicked="OnDayClicked" />
+        </div>
     </div>
 
-    <div class="month-view @(ShowMonthCalendar ? "show" : "hide")">
-        <CalendarMonth DaysInMonth="DaysInMonth"
-                       StartOffset="StartOffset"
-                       EndOffset="EndOffset"
-                       OnDayClicked="OnDayClicked" />
-    </div>
+
 </AuthGuard>
 
 <style>
@@ -81,12 +84,12 @@
     public int SelectedMonth { get; set; } = DateTime.Now.Month;
     public int SelectedYear { get; set; } = DateTime.Now.Year;
     private DateTime? SelectedDay { get; set; }
-
     private List<DateTime> DaysInMonth { get; set; } = new();
     private int StartOffset { get; set; }
     private int EndOffset { get; set; }
-
     private bool ShowMonthCalendar { get; set; } = true;
+    private string FadeKey =>
+     $"{SchoolContext.SelectedSchoolYearId}-{SchoolContext.SelectedGradeLevelId}-{SchoolContext.SelectedSchoolSectionId}";
 
     protected override void OnInitialized()
     {

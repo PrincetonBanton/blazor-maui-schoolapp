@@ -1,8 +1,10 @@
 ﻿@page "/students/list"
 @using System.Text.Json
 @using SchoolApp.Shared.Models
+@using SchoolApp.Client.Helpers
 @inject HttpClient Http
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 @inject SchoolApp.Shared.Services.SchoolContextService SchoolContext
 
 <AuthGuard>
@@ -13,7 +15,9 @@
         !SchoolContext.SelectedGradeLevelId.HasValue ||
         !SchoolContext.SelectedSchoolSectionId.HasValue)
     {
-        <NoDataLogo />
+        <div class="fade-in" @key="FadeKey">
+            <NoDataLogo />
+        </div>
     }
     else if (students == null)
     {
@@ -46,70 +50,79 @@
             </button>
         </div>
 
-        <table class="table table-striped align-middle">
-            <tbody>
-                @if (students.Count == 0)
-                {
-                    <tr>
-                        <td colspan="8" class="text-center text-muted">
-                            No student data to display yet.
-                        </td>
-                    </tr>
-                }
-                else
-                {
-                    var index = 1;
-                    foreach (var student in students)
+        //Load Table List
+        <div class="fade-in" @key="FadeKey">
+            <table class="table table-striped align-middle">
+                <tbody>
+                    @if (students.Count == 0)
                     {
                         <tr>
-                            <!-- Row number -->
-                            <td style="width: 5%; text-align:center;">@index</td>
-
-                            <!-- Student picture -->
-                            <td style="width: 10%; text-align:center;">
-                                <img src="id_pic.png" alt="Student Photo"
-                                     class="rounded border me-3"
-                                     style="width: 30px; height: 30px; object-fit: cover;" />
-                            </td>
-
-                            <!-- Student name -->
-                            <td style="width: 25%;">
-                                @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())
-                            </td>
-
-                            <td style="width: 10%;">@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
-                            <td style="width: 10%;">@student.Gender</td>
-                            <td style="width: 20%;">@student.Address</td>
-                            <td style="width: 10%;">@student.ContactNumber</td>
-
-                            <!-- Action buttons -->
-                            <td style="width: 20%;">
-                                <div class="d-flex gap-2 justify-content-center">
-                                    <div style="display:flex; gap:10px; justify-content:center;">
-                                        <button title="Edit"
-                                                @onclick="() => EditStudent(student)"
-                                                style="background:none; border:none; color:#f4b400; font-size:1.3rem; cursor:pointer;">
-                                            ✏️
-                                        </button>
-
-                                        <button title="Delete"
-                                                disabled
-                                                style="background:none; border:none; color:#d93025; font-size:1.3rem; cursor:not-allowed; opacity:0.6;">
-                                            ❌
-                                        </button>
-                                    </div>
-                                    <a class="btn btn-sm btn-primary" style="width:120px;" href="@($"/students/card/{student.Id}")">View Card</a>
-                                </div>
+                            <td colspan="8" class="text-center text-muted">
+                                No student data to display yet.
                             </td>
                         </tr>
-                        index++;
                     }
-                }
-            </tbody>
-        </table>
+                    else
+                    {
+                        var index = 1;
+                        foreach (var student in students)
+                        {
+                            <tr>
+                                <!-- Row number -->
+                                <td style="width: 5%; text-align:center;">@index</td>
 
+                                <!-- Student picture -->
+                                <td style="width: 5%; text-align:center;">
+                                    <img src="id_pic.png" alt="Student Photo"
+                                         class="rounded border me-3" style="width: 30px; height: 30px; object-fit: cover;" />
+                                </td>
+
+                                <!-- Student name -->
+                                <td style="width: 10%;">
+                                    @($"{student.LastName}, {student.FirstName} {student.MiddleName}".Trim())
+                                </td>
+
+                                <td style="width: 10%;">@student.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                                <td style="width: 10%;">@student.Gender</td>
+                                <td style="width: 10%;">@student.Address</td>
+                                <td style="width: 10%;">@student.ContactNumber</td>
+
+                                <td style="width: 30%;">
+                                    <div class="d-flex justify-content-center">
+                                        <div style="display:flex; gap:10px; justify-content:center;">
+                                            <button title="Guardians"
+                                                    style="background:none; border:none; font-size:1.3rem; cursor:pointer;"
+                                                    @onclick="() => ShowParentsAlert(student)">
+                                                👪
+                                            </button>
+                                            <button class="btn btn-primary btn-sm rounded-circle"
+                                                    style="width: 28px; height: 28px; padding: 0;"
+                                                    title="View Card"
+                                                    @onclick="() => GoToStudentCard(student.Id)">
+                                                📄
+                                            </button>
+                                            <button class="btn btn-warning btn-sm rounded-circle"
+                                                    style="width: 28px; height: 28px; padding: 0;"
+                                                    title="Edit Student"
+                                                    @onclick="() => EditStudent(student)">
+                                                ✏️
+                                            </button>
+                                            <button class="btn btn-danger btn-sm rounded-circle"
+                                                    style="width: 28px; height: 28px; padding: 0;"
+                                                    title="Delete Student">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
     }
-
 
     @if (ShowModal)
     {
@@ -121,9 +134,6 @@
                         <button type="button" class="btn-close" @onclick="HideStudentModal"></button>
                     </div>
                     <div class="modal-body">
-                        <button class="btn btn-outline-primary mb-3" @onclick="AutoFillStudent">
-                            Auto-Fill Student Info
-                        </button>
                         <div class="mb-3">
                             <div class="alert alert-info d-flex justify-content-between align-items-center p-3 mb-3 border" style="min-height: 60px;">
                                 <div>
@@ -152,6 +162,9 @@
                     </div>
 
                     <div class="modal-footer">
+                        <button class="btn btn-outline-primary mb-3" @onclick="AutoFillStudent">
+                            Auto-Fill Student Info
+                        </button>
                         <button class="btn btn-secondary" style="width:150px;" @onclick="HideStudentModal">Cancel</button>
                         <button class="btn btn-primary" style="width:150px;" @onclick="SaveStudentAsync">@(IsEditMode ? "Update" : "Save")</button>
                     </div>
@@ -159,6 +172,7 @@
             </div>
         </div>
     }
+
 </AuthGuard>
 
 @code {
@@ -167,6 +181,8 @@
     private bool ShowModal = false;
     private bool IsEditMode = false;
     private bool IsSearching = false;
+    private string FadeKey =>
+        $"{SchoolContext.SelectedSchoolYearId}-{SchoolContext.SelectedGradeLevelId}-{SchoolContext.SelectedSchoolSectionId}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -255,7 +271,8 @@
         NewStudent.GradeLevelId = SchoolContext.SelectedGradeLevelId;
         NewStudent.SchoolSectionId = SchoolContext.SelectedSchoolSectionId;
 
-        var errorMessage = ValidateStudent();
+        var errorMessage = StudentValidator.Validate(NewStudent);
+
         if (errorMessage != null)
         {
             await JS.InvokeVoidAsync("alert", errorMessage);
@@ -294,6 +311,11 @@
         }
     }
 
+    private async Task ShowParentsAlert(Student student)
+    {
+        await JS.InvokeVoidAsync("alert", $"Parent/Guardian feature for {student.FullName} is not implemented yet.");
+    }
+
     private string SearchKeyword = "";
     private async Task HandleSearch(string keyword)
     {
@@ -313,57 +335,16 @@
         StateHasChanged();
     }
 
-    private string? ValidateStudent()
-    {
-        if (string.IsNullOrWhiteSpace(NewStudent.FirstName))
-            return "First name is required.";
-        if (string.IsNullOrWhiteSpace(NewStudent.LastName))
-            return "Last name is required.";
-        if (NewStudent.DateOfBirth == default)
-            return "Date of birth is required.";
-        if (string.IsNullOrWhiteSpace(NewStudent.Gender))
-            return "Gender is required.";
-        if (string.IsNullOrWhiteSpace(NewStudent.Address))
-            return "Address is required.";
-        if (string.IsNullOrWhiteSpace(NewStudent.ContactNumber))
-            return "Contact number is required.";
-        if (NewStudent.GradeLevelId == null)
-            return "A grade level must be selected.";
-        if (NewStudent.SchoolSectionId == null)
-            return "A school section must be selected.";
-        return null;
-    }
-
-
-    private Random rand = new Random();
-
     private void AutoFillStudent()
     {
-        string[] firstNames =
-        {
-            "Juan", "Pedro", "Maria", "Jose", "Ana", "Liza", "Carlos", "Rosa", "Mark", "Ella",
-            "John", "Paul", "Grace", "Angel", "Leo", "Nina", "Kevin", "Samantha", "Daniel", "Mia",
-            "Allan", "Jessa", "Noel", "Cathy", "Ramon", "April", "Dennis", "Jenny", "Victor", "Lourdes"
-        };
-        string[] lastNames =
-        {
-            "Santos", "Reyes", "Cruz", "Dela Cruz", "Garcia", "Torres", "Mendoza", "Flores", "Lopez", "Ramos",
-            "Gonzales", "Rivera", "Bautista", "Castro", "Domingo", "Fernandez", "Gutierrez", "Jimenez", "Lim", "Manalo",
-            "Navarro", "Ocampo", "Perez", "Quinto", "Soriano", "Tan", "Valdez", "Yap", "Zamora", "Villanueva"
-        };
-        string[] addresses =
-        {
-            "Davao City", "Sta. Cruz", "Toril", "Buhangin", "Calinan",
-            "Mintal", "Matina", "Tugbok", "Bago Aplaya", "Panacan"
-        };
-        string[] genders = { "Male", "Female" };
-
-        NewStudent.FirstName = firstNames[rand.Next(firstNames.Length)];
-        NewStudent.MiddleName = "M.";
-        NewStudent.LastName = lastNames[rand.Next(lastNames.Length)];
-        NewStudent.DateOfBirth = DateTime.Now.AddYears(-7 - rand.Next(2)).AddDays(rand.Next(365));
-        NewStudent.Gender = genders[rand.Next(genders.Length)];
-        NewStudent.Address = addresses[rand.Next(addresses.Length)];
-        NewStudent.ContactNumber = "09" + rand.Next(100000000, 999999999);
+        NewStudent = StudentSeeder.GenerateRandomStudent(
+            SchoolContext.SelectedGradeLevelId,
+            SchoolContext.SelectedSchoolSectionId
+        );
     }
+    private void GoToStudentCard(Guid studentId)
+    {
+        Nav.NavigateTo($"/students/card/{studentId}");
+    }
+
 }

@@ -31,12 +31,13 @@
         <div class="d-flex align-items-center" style="gap: 6px;">
             <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center"
                  style="width: 35px; height: 35px; color: white; font-size: 1.1rem;">
-                👤
+                @UserInitials
             </div>
-@*             <div style="font-weight: 500; font-size: 0.8rem; color: darkblue;">
-                John Doe
-            </div> *@
+            <div style="font-weight: 500; font-size: 0.8rem; color: darkblue;">
+                @LoginUserName
+            </div>
         </div>
+
         <button title="Logout"
             @onclick="Logout"
             class="d-flex bg-primary text-white rounded-circle shadow align-items-center justify-content-center"
@@ -70,6 +71,37 @@
     private string SearchText = "";
     private bool ShowSetupModal = false;
     private System.Timers.Timer debounceTimer;
+
+    private string LoginUserName = "User";
+    private string UserInitials = "U";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await LoadLoginUser();
+    }
+
+    private async Task LoadLoginUser()
+    {
+        var name = await JS.InvokeAsync<string>("localStorage.getItem", "loginUserName");
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            LoginUserName = name;
+            UserInitials = GetInitials(name);
+            StateHasChanged();
+        }
+    }
+
+    private string GetInitials(string fullName)
+    {
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length switch
+        {
+            0 => "U",
+            1 => parts[0][0].ToString().ToUpper(),
+            _ => $"{parts[0][0]}{parts[^1][0]}".ToUpper()
+        };
+    }
 
     private async Task TriggerUniversalSearch()
     {

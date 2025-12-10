@@ -15,12 +15,12 @@
         <EditForm Model="model" OnValidSubmit="HandleRegister">
             <div class="mb-2">
                 <label class="form-label">Username</label>
-                <InputText class="form-control" @bind-Value="model.Username" placeholder="admin" />
+                <InputText class="form-control" @bind-Value="model.Username" placeholder="username" />
             </div>
 
             <div class="mb-3">
                 <label class="form-label">Password</label>
-                <InputText class="form-control" type="password" @bind-Value="model.Password" placeholder="12345" />
+                <InputText class="form-control" type="password" @bind-Value="model.Password" placeholder="*****" />
             </div>
 
             <div class="d-grid">
@@ -34,35 +34,6 @@
         </div>
     </div>
 </div>
-
-<style>
-    .login-wrapper {
-        height: 75vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .login-card {
-        width: 380px;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-        background: #fff;
-    }
-
-    .login-logo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-bottom: 10px;
-    }
-
-    .login-footer {
-        font-size: 0.85rem;
-        color: #666;
-    }
-</style>
 
 @code {
     private RegisterModel model = new();
